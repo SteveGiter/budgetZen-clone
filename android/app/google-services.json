@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "442196446312",
+    "project_id": "budget-zen-91391",
+    "storage_bucket": "budget-zen-91391.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:442196446312:android:46c9532032fd3058553fdd",
+        "android_client_info": {
+          "package_name": "com.example.budget_zen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3KunSpr3aotNcvEqntCnG2YB2yUElggs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
