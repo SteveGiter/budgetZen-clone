@@ -265,7 +265,7 @@ class _StatistiquesState extends State<Statistiques> {
             ),
           ),
           Text(
-            '${value.toStringAsFixed(2)} €',
+            '${value.toStringAsFixed(2)} FCFA',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: color,
