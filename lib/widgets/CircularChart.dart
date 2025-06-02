@@ -3,16 +3,16 @@ import 'package:fl_chart/fl_chart.dart';
 import '../colors/app_colors.dart';
 import '../services/firebase/firestore.dart';
 
-class Statistiques extends StatefulWidget {
-  const Statistiques({super.key, required this.userId});
+class CircularChart extends StatefulWidget {
+  const CircularChart({super.key, required this.userId});
 
   final String userId;
 
   @override
-  State<Statistiques> createState() => _StatistiquesState();
+  State<CircularChart> createState() => _CircularChartState();
 }
 
-class _StatistiquesState extends State<Statistiques> {
+class _CircularChartState extends State<CircularChart> {
   final FirestoreService _firestoreService = FirestoreService();
   int touchedIndex = -1;
 
@@ -25,33 +25,12 @@ class _StatistiquesState extends State<Statistiques> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(isDarkMode),
-          const SizedBox(height: 20),
           _buildStatisticsStream(isDarkMode),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(bool isDarkMode) {
-    return Row(
-      children: [
-        Icon(
-          Icons.bar_chart,
-          color: isDarkMode ? AppColors.darkSecondaryColor : Colors.blue.shade800,
-          size: 50,
-        ),
-        const SizedBox(width: 10),
-        Text(
-          'Statistiques',
-          style: TextStyle(
-            fontSize: 20,
-            color: isDarkMode ? AppColors.darkSecondaryColor : Colors.blue.shade800,
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildStatisticsStream(bool isDarkMode) {
     return StreamBuilder<double>(

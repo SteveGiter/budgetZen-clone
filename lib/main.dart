@@ -1,9 +1,10 @@
 import 'dart:io';
-
 import 'package:budget_zen/appPages/Initial.dart';
 import 'package:budget_zen/appPages/SignUp.dart';
+import 'package:budget_zen/services/firebase/messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
@@ -44,6 +45,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  //initialisation du service de notification
+  //await FirebaseMessagingService().initFCM();
 
   //await FirebaseAuth.instance.setPersistence(Persistence.LOCAL); //Cette fonctionnaté n'est pas supportée sur mobile
   await initializeDateFormatting('fr_FR', null); // Initialise les données françaises
@@ -89,11 +93,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Appliquer la déconnexion uniquement sur mobile (Android ou iOS)
-    if ((Platform.isAndroid || Platform.isIOS) &&
+    if (!kIsWeb &&
+        (Platform.isAndroid || Platform.isIOS) &&
         (state == AppLifecycleState.inactive || state == AppLifecycleState.paused)) {
       FirebaseAuth.instance.signOut();
 
-      // Rediriger vers la page de login en supprimant la pile des routes
       navigatorKey.currentState?.pushNamedAndRemoveUntil(
         '/LoginPage',
             (Route<dynamic> route) => false,

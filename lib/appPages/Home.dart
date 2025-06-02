@@ -4,9 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../colors/app_colors.dart';
 import '../services/firebase/firestore.dart';
-import '../widgets/Statistiques.dart';
+import '../widgets/EpargnesChart.dart';
+import '../widgets/RevenusChart.dart';
+import '../widgets/CircularChart.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
+import '../widgets/DepensesChart.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -33,8 +36,8 @@ class _HomePageState extends State<HomePage> {
   List<Color> cardBgColor = [
     Colors.grey.shade300,
     Colors.pink.shade100,
-    Colors.green.shade100, // Échangez cette ligne
-    Colors.blue.shade100,  // Avec celle-ci
+    Colors.green.shade100,
+    Colors.blue.shade100,
   ];
 
   List<String> infoMontant = [
@@ -49,7 +52,7 @@ class _HomePageState extends State<HomePage> {
   double depenses = 0.0;
   double revenus = 0.0;
   double epargnes = 0.0;
-  bool isExpanded = false; // État pour gérer l'affichage des boutons
+  bool isExpanded = false;
 
   StreamSubscription<DocumentSnapshot>? _userSubscription;
   StreamSubscription<double>? _depensesSubscription;
@@ -57,7 +60,6 @@ class _HomePageState extends State<HomePage> {
   StreamSubscription<double>? _epargnesSubscription;
   final FirestoreService _firestoreService = FirestoreService();
 
-  // Catégories
   final List<String> revenuCategories = [
     'Salaire',
     'Investissement',
@@ -148,10 +150,33 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  Widget _buildHeader(bool isDarkMode) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 30),
+      child: Row(
+        children: [
+          Icon(
+            Icons.bar_chart,
+            color: isDarkMode ? AppColors.darkSecondaryColor : Colors.blue.shade800,
+            size: 50,
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Statistiques',
+            style: TextStyle(
+              fontSize: 20,
+              color: isDarkMode ? AppColors.darkSecondaryColor : Colors.blue.shade800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final user = FirebaseAuth.instance.currentUser; // Récupère l'utilisateur actuel
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -248,8 +273,22 @@ class _HomePageState extends State<HomePage> {
               },
             ),
           ),
-          Statistiques(
-            userId: user?.uid ?? '', // Passage de l'ID utilisateur
+          _buildHeader(isDarkMode),
+          const SizedBox(height: 20),
+          CircularChart(
+                userId: user?.uid ?? '',
+          ),
+          const SizedBox(height: 20),
+          RevenusChart(
+            userId: user?.uid ?? '',
+          ),
+          const SizedBox(height: 20),
+          DepensesChart(
+            userId: user?.uid ?? '',
+          ),
+          const SizedBox(height: 20),
+          EpargnesChart(
+            userId: user?.uid ?? '',
           ),
         ],
       ),
@@ -267,7 +306,7 @@ class _HomePageState extends State<HomePage> {
               ),
               onPressed: () {
                 setState(() {
-                  isExpanded = !isExpanded; // Change l'état d'expansion
+                  isExpanded = !isExpanded;
                 });
               },
             ),
@@ -310,8 +349,8 @@ class _HomePageState extends State<HomePage> {
                 message: "Ajouter une épargne",
                 child: FloatingActionButton(
                   shape: const CircleBorder(),
-                  backgroundColor: isDarkMode ? AppColors.darkSecondaryColor : Colors.blueAccent, // Épargne
-                  child: const Icon(Icons.savings, color: Colors.white), // Épargne
+                  backgroundColor: isDarkMode ? AppColors.darkSecondaryColor : Colors.blueAccent,
+                  child: const Icon(Icons.savings, color: Colors.white),
                   onPressed: () {
                     _showAddSavingsDialog(context);
                   },
@@ -664,7 +703,6 @@ class _HomePageState extends State<HomePage> {
     if (user == null) return;
 
     try {
-      // Vérifier que le budget ne deviendra pas négatif
       final firestoreService = FirestoreService();
       final budgetDoc = await firestoreService.firestore.collection('budgets').doc(user.uid).get();
       final currentBudget = (budgetDoc.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
@@ -712,9 +750,7 @@ class _HomePageState extends State<HomePage> {
           content: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text('Dépense de ${amount.toStringAsFixed(2)} FCFA ajoutée'),
-              ),
+              Expanded(child: Text('Dépense de ${amount.toStringAsFixed(2)} FCFA ajoutée')),
               IconButton(
                 icon: Icon(Icons.close, color: Colors.white),
                 onPressed: () {
@@ -751,13 +787,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
   Future<void> _addSavings(double amount, String category, String description) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
-      // Vérifier que le budget ne deviendra pas négatif
       final firestoreService = FirestoreService();
       final budgetDoc = await firestoreService.firestore.collection('budgets').doc(user.uid).get();
       final currentBudget = (budgetDoc.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
@@ -793,7 +827,6 @@ class _HomePageState extends State<HomePage> {
         'dateCreation': FieldValue.serverTimestamp(),
       });
 
-      // Mettre à jour le budget
       await _firestoreService.firestore
           .collection('budgets')
           .doc(user.uid)
@@ -844,5 +877,4 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
-
 }

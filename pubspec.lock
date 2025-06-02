@@ -145,6 +145,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.8"
+  decimal:
+    dependency: transitive
+    description:
+      name: decimal
+      sha256: "24a261d5d5c87e86c7651c417a5dbdf8bcd7080dd592533910e8d0505a279f21"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.3"
   equatable:
     dependency: transitive
     description:
@@ -273,6 +281,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.7+6"
+  firebase_messaging:
+    dependency: "direct main"
+    description:
+      name: firebase_messaging
+      sha256: "38111089e511f03daa2c66b4c3614c16421b7d78c84ee04331a0a65b47df4542"
+      url: "https://pub.dev"
+    source: hosted
+    version: "15.2.6"
+  firebase_messaging_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_messaging_platform_interface
+      sha256: ba254769982e5f439e534eed68856181c74e2b3f417c8188afad2bb440807cc7
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.6.6"
+  firebase_messaging_web:
+    dependency: transitive
+    description:
+      name: firebase_messaging_web
+      sha256: dba89137272aac39e95f71408ba25c33fb8ed903cd5fa8d1e49b5cd0d96069e0
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.10.6"
   firebase_storage:
     dependency: "direct main"
     description:
@@ -310,6 +342,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_charts:
+    dependency: "direct main"
+    description:
+      name: flutter_charts
+      sha256: eb9d2bf98bfc779c1da9cf1fe80afd598094aed33e536cf04845d8f266f48c11
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.2"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -352,6 +392,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  google_fonts:
+    dependency: transitive
+    description:
+      name: google_fonts
+      sha256: b1ac0fe2832c9cc95e5e88b57d627c5e68c223b9657f4b96e1487aa9098c7b82
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.2.1"
   google_identity_services_web:
     dependency: transitive
     description:
@@ -544,6 +592,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.1.1"
+  logger:
+    dependency: transitive
+    description:
+      name: logger
+      sha256: be4b23575aac7ebf01f225a241eb7f6b5641eeaf43c6a8613510fc2f8cf187d1
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.0"
   lottie:
     dependency: "direct dev"
     description:
@@ -616,6 +672,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.1"
+  path_provider:
+    dependency: transitive
+    description:
+      name: path_provider
+      sha256: "50c5dd5b6e1aaf6fb3a78b33f6aa3afca52bf903a8a5298f53101fdaee55bbcd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.5"
+  path_provider_android:
+    dependency: transitive
+    description:
+      name: path_provider_android
+      sha256: d0d310befe2c8ab9e7f393288ccbb11b60c019c6b5afc21973eeee4dda2b35e9
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.17"
+  path_provider_foundation:
+    dependency: transitive
+    description:
+      name: path_provider_foundation
+      sha256: "4843174df4d288f5e29185bd6e72a6fbdf5a4a4602717eed565497429f179942"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.1"
   path_provider_linux:
     dependency: transitive
     description:
@@ -680,6 +760,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.5"
+  rational:
+    dependency: transitive
+    description:
+      name: rational
+      sha256: cb808fb6f1a839e6fc5f7d8cb3b0a10e1db48b3be102de73938c627f0b636336
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.3"
+  rxdart:
+    dependency: "direct main"
+    description:
+      name: rxdart
+      sha256: "5c3004a4a8dbb94bd4bf5412a4def4acdaa12e12f269737a5751369e12d1a962"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.28.0"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -789,6 +885,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.4"
+  tuple:
+    dependency: transitive
+    description:
+      name: tuple
+      sha256: a97ce2013f240b2f3807bcbaf218765b6f301c3eff91092bcfa23a039e7dd151
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
   typed_data:
     dependency: transitive
     description:
