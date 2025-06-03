@@ -12,9 +12,11 @@ class CustomBottomNavBar extends StatelessWidget {
   });
 
   void _handleTabSelected(int index, BuildContext context) {
-    final routes = ['/HomePage', '/TransactionPage', '/ProfilePage'];
+    if (index == currentIndex) return; // Éviter la navigation si déjà sur la page
+
+    final routes = ['/HomePage', '/TransactionPage', '/SettingsPage'];
     Navigator.pushReplacementNamed(context, routes[index]);
-    onTabSelected(index);
+    onTabSelected(index); // Mettre à jour l'index dans la page parente
   }
 
   @override
@@ -47,9 +49,9 @@ class CustomBottomNavBar extends StatelessWidget {
         label: 'Transaction',
       ),
       NavigationDestination(
-        icon: Icon(Icons.person, color: Colors.white),
-        selectedIcon: Icon(Icons.person, color: Colors.black),
-        label: 'Profil',
+        icon: Icon(Icons.settings, color: Colors.white),
+        selectedIcon: Icon(Icons.settings, color: Colors.black),
+        label: 'Paramètres',
       ),
     ];
   }

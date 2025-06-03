@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:budget_zen/appPages/Initial.dart';
+import 'package:budget_zen/appPages/Settings.dart';
 import 'package:budget_zen/appPages/SignUp.dart';
 import 'package:budget_zen/services/firebase/messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -170,6 +171,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             '/HomePage': (context) => const HomePage(),
             '/AdminPage': (context) => const AdminWelcomePage(),
             '/TransactionPage': (context) => const Transaction(),
+            '/SettingsPage': (context) => const SettingsPage(),
             '/ProfilePage': (context) => const Profile(),
           },
 

@@ -466,7 +466,9 @@ class _ProfileState extends State<Profile> {
                               onCancel: () => setState(() => _isEditingName = false),
                               icon: Icons.person_outline,
                             ),
+                            /*//J'ai retiré le champs
                             const SizedBox(height: 16),
+
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -494,6 +496,7 @@ class _ProfileState extends State<Profile> {
                                 ),
                               ],
                             ),
+                            */
                             const SizedBox(height: 16),
                             _buildPhoneField(),
                             const SizedBox(height: 16),
@@ -558,45 +561,7 @@ class _ProfileState extends State<Profile> {
               ),
             ),
           ),
-          // Bouton de déconnexion coupé
-          Center(
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.7,
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-              ),
-              child: TextButton(
-                onPressed: () => confirmLogout(context),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  foregroundColor: Colors.white,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
-                  ),
-                ),
-                child: const Text('Déconnexion'),
-              ),
-            ),
-          ),
         ],
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 2,
-        onTabSelected: (index) {
-          if (index != 2) {
-            Navigator.pushReplacementNamed(
-              context,
-              index == 0 ? '/HomePage' : '/TransactionPage',
-            );
-          }
-        },
       ),
     );
   }

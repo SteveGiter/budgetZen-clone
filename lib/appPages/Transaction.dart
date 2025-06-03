@@ -5,6 +5,7 @@ import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import 'Home.dart';
 import 'Profile.dart';
+import 'Settings.dart';
 
 class Transaction extends StatefulWidget {
   const Transaction({super.key});
@@ -83,13 +84,7 @@ class _TransactionState extends State<Transaction> {
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 1,
         onTabSelected: (index) {
-          if (index != 1) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) =>
-              index == 0 ? const HomePage() : const Profile()),
-            );
-          }
+          // Pas de navigation ici, gérée par CustomBottomNavBar
         },
       ),
     );

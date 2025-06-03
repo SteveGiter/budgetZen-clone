@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:budget_zen/services/firebase/auth.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -116,7 +115,7 @@ class _SignUpPageState extends State<SignUpPage> {
                                       : () async {
                                     setState(() => _isGoogleLoading = true);
                                     try {
-                                      await Auth().signUpWithGoogle();
+                                      await Auth().signInWithGoogle();
                                       if (mounted) {
                                         Navigator.pushReplacement(
                                           context,

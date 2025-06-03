@@ -1,10 +1,7 @@
 import 'dart:async';
-import 'dart:io';
-
 import 'package:budget_zen/services/firebase/auth.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../colors/app_colors.dart';
 import 'Redirection.dart';
 
@@ -22,6 +19,13 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isGoogleLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +63,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     SizedBox(height: isSmallScreen ? 10 : 30),
-
                     Expanded(
                       child: Container(
                         width: double.infinity,
@@ -101,8 +104,6 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               SizedBox(height: isSmallScreen ? 15 : 30),
-
-                              // Champ email
                               TextFormField(
                                 controller: _emailController,
                                 style: TextStyle(fontSize: isSmallScreen ? 14 : null, color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor),
@@ -135,8 +136,6 @@ class _LoginPageState extends State<LoginPage> {
                                 },
                               ),
                               SizedBox(height: isSmallScreen ? 10 : 20),
-
-                              // Champ mot de passe
                               TextFormField(
                                 controller: _passwordController,
                                 obscureText: _obscurePassword,
@@ -178,8 +177,6 @@ class _LoginPageState extends State<LoginPage> {
                                 },
                               ),
                               SizedBox(height: isSmallScreen ? 5 : 12),
-
-                              // Mot de passe oublié
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
@@ -193,8 +190,6 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               SizedBox(height: isSmallScreen ? 8 : 18),
-
-                              // Bouton de connexion
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
@@ -224,8 +219,6 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               SizedBox(height: isSmallScreen ? 15 : 25),
-
-                              // Séparateur OU
                               Row(
                                 children: [
                                   Expanded(child: Divider(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor, thickness: 1)),
@@ -240,8 +233,6 @@ class _LoginPageState extends State<LoginPage> {
                                 ],
                               ),
                               SizedBox(height: isSmallScreen ? 15 : 25),
-
-                              // Bouton Google
                               SizedBox(
                                 width: double.infinity,
                                 child: OutlinedButton(
@@ -250,109 +241,61 @@ class _LoginPageState extends State<LoginPage> {
                                       : () async {
                                     setState(() => _isGoogleLoading = true);
                                     try {
+                                      print('Début de la connexion Google');
                                       final userCredential = await Auth().signInWithGoogle();
                                       if (userCredential != null && mounted) {
-                                        final user = userCredential.user;
-                                        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-                                        await showDialog(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: Text(
-                                              'Connexion réussie !',
-                                              style: TextStyle(
-                                                color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            content: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                if (user?.photoURL != null)
-                                                  CircleAvatar(
-                                                    radius: 30,
-                                                    backgroundImage: NetworkImage(user!.photoURL!),
-                                                  )
-                                                else
-                                                  Icon(Icons.account_circle, size: 60,
-                                                      color: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor),
-                                                SizedBox(height: 15),
-                                                Text(
-                                                  'Bienvenue${user?.displayName != null ? ' ${user!.displayName}!' : '!'}',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16,
-                                                    color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                                SizedBox(height: 10),
-                                                Text(
-                                                  'Vous êtes maintenant connecté avec Google',
-                                                  style: TextStyle(
-                                                    color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ],
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.of(context).pop(),
-                                                child: Text(
-                                                  'Continuer',
-                                                  style: TextStyle(
-                                                    color: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                            backgroundColor: isDarkMode ? AppColors.darkCardColor : AppColors.cardColor,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(15),
-                                            ),
-                                          ),
-                                        );
-
-                                        if (!mounted) return;
+                                        print('Connexion Google réussie pour ${userCredential.user?.email}');
+                                        print('Redirection vers RedirectionPage');
                                         Navigator.pushReplacement(
                                           context,
                                           MaterialPageRoute(builder: (context) => const RedirectionPage()),
                                         );
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Connexion réussie ! Bienvenue ${userCredential.user?.displayName ?? ''}',
+                                              style: const TextStyle(color: Colors.white),
+                                            ),
+                                            backgroundColor: AppColors.primaryColor,
+                                            duration: const Duration(seconds: 2),
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                        );
                                       }
                                     } on FirebaseAuthException catch (e) {
+                                      print('Erreur FirebaseAuthException: ${e.code} - ${e.message}');
                                       if (mounted && e.code != 'cancelled') {
                                         String errorMessage;
                                         switch (e.code) {
                                           case 'account-exists-with-different-credential':
-                                            errorMessage = "Un compte existe déjà avec cet email";
+                                            errorMessage = 'Un compte existe déjà avec cet email.';
                                             break;
                                           case 'invalid-credential':
-                                            errorMessage = "Session Google invalide. Veuillez réessayer";
+                                            errorMessage = 'Session Google invalide. Veuillez réessayer.';
                                             break;
                                           case 'operation-not-allowed':
-                                            errorMessage = "Connexion Google désactivée";
+                                            errorMessage = 'Connexion Google désactivée.';
                                             break;
                                           case 'user-disabled':
-                                            errorMessage = "Ce compte a été désactivé";
+                                            errorMessage = 'Ce compte a été désactivé.';
                                             break;
                                           case 'network-request-failed':
-                                            errorMessage = "Problème de connexion internet";
+                                            errorMessage = 'Problème de connexion internet.';
                                             break;
                                           default:
-                                            errorMessage = "Erreur lors de la connexion (${e.code})";
+                                            errorMessage = 'Erreur lors de la connexion (${e.code}).';
                                         }
-
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Row(
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                Expanded(
-                                                  child: Text(errorMessage),
-                                                ),
+                                                Expanded(child: Text(errorMessage)),
                                                 IconButton(
-                                                  icon: Icon(Icons.close, color: Colors.white),
+                                                  icon: const Icon(Icons.close, color: Colors.white),
                                                   onPressed: () {
                                                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
                                                   },
@@ -369,15 +312,14 @@ class _LoginPageState extends State<LoginPage> {
                                         );
                                       }
                                     } catch (e) {
+                                      print('Erreur inattendue: $e');
                                       if (mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Row(
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                Expanded(
-                                                  child: const Text("Erreur inattendue lors de la connexion"),
-                                                ),
+                                                const Expanded(child: Text('Erreur inattendue lors de la connexion.')),
                                                 IconButton(
                                                   icon: const Icon(Icons.close, color: Colors.white),
                                                   onPressed: () {
@@ -388,12 +330,17 @@ class _LoginPageState extends State<LoginPage> {
                                             ),
                                             backgroundColor: AppColors.errorColor,
                                             duration: const Duration(seconds: 3),
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
                                           ),
                                         );
                                       }
                                     } finally {
                                       if (mounted) {
                                         setState(() => _isGoogleLoading = false);
+                                        print('Fin de la tentative de connexion Google');
                                       }
                                     }
                                   },
@@ -440,8 +387,6 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               SizedBox(height: isSmallScreen ? 15 : 25),
-
-                              // Lien inscription
                               Padding(
                                 padding: EdgeInsets.only(bottom: isSmallScreen ? 10 : 20),
                                 child: TextButton(
@@ -487,97 +432,61 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _login() async {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+      setState(() => _isLoading = true);
       try {
+        print('Début de la connexion email');
         await Auth().loginWithEmailAndPassword(
           _emailController.text.trim(),
           _passwordController.text.trim(),
         );
-
-        if (!mounted) return;
-
-        await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(
-              'Connexion réussie !',
-              style: TextStyle(
-                color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor,
-                fontWeight: FontWeight.bold,
+        if (mounted) {
+          print('Connexion email réussie pour ${_emailController.text.trim()}');
+          print('Redirection vers RedirectionPage');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const RedirectionPage()),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Connexion réussie ! Bienvenue',
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: AppColors.primaryColor,
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
-            content: Text(
-              'Bienvenue de retour !\n\nVous êtes maintenant connecté avec l\'adresse : ${_emailController.text.trim()}',
-              style: TextStyle(
-                color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor,
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'Continuer',
-                  style: TextStyle(
-                    color: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor,
-                  ),
-                ),
-              ),
-            ],
-            backgroundColor: isDarkMode ? AppColors.darkCardColor : AppColors.cardColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-          ),
-        );
-
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const RedirectionPage()),
-        );
+          );
+        }
       } on FirebaseAuthException catch (e) {
+        print('Erreur FirebaseAuthException: ${e.code} - ${e.message}');
         String errorMessage;
-
         switch (e.code) {
           case 'invalid-email':
-            errorMessage = "Format d'email invalide. Utilisez une adresse email valide (ex: utilisateur@exemple.com).";
+            errorMessage = 'Format d\'email invalide.';
             break;
           case 'user-disabled':
-            errorMessage = "Compte désactivé. Contactez l'administrateur à support@votreapp.com pour assistance.";
+            errorMessage = 'Compte désactivé.';
             break;
           case 'user-not-found':
-            errorMessage = "Aucun compte trouvé avec cet email. Vérifiez l'orthographe ou créez un compte.";
+            errorMessage = 'Aucun compte trouvé.';
             break;
           case 'wrong-password':
-            errorMessage = "Mot de passe incorrect. Réessayez ou cliquez sur 'Mot de passe oublié' si nécessaire.";
+            errorMessage = 'Mot de passe incorrect.';
             break;
           case 'too-many-requests':
-            errorMessage = "Trop de tentatives échouées. Veuillez patienter 5 minutes avant de réessayer.";
+            errorMessage = 'Trop de tentatives. Réessayez plus tard.';
             break;
           case 'network-request-failed':
-            errorMessage = "Échec de connexion au serveur. Vérifiez votre connexion internet et réessayez.";
-            break;
-          case 'operation-not-allowed':
-            errorMessage = "Connexion par email/désactivée. Contactez le support technique.";
-            break;
-          case 'invalid-credential':
-            errorMessage = "Identifiants corrompus ou expirés. Veuillez vous reconnecter.";
-            break;
-          case 'email-already-in-use':
-            errorMessage = "Cet email est déjà associé à un compte. Essayez de vous connecter.";
-            break;
-          case 'weak-password':
-            errorMessage = "Mot de passe trop faible. Utilisez au moins 6 caractères.";
+            errorMessage = 'Problème de connexion internet.';
             break;
           default:
-            errorMessage = "Erreur d'authentification (${e.code}). Veuillez réessayer.";
+            errorMessage = 'Erreur: ${e.code}.';
         }
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -586,7 +495,7 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   Expanded(child: Text(errorMessage)),
                   IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: () {
                       ScaffoldMessenger.of(context).hideCurrentSnackBar();
                     },
@@ -594,8 +503,8 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
               backgroundColor: AppColors.errorColor,
-              behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -603,18 +512,12 @@ class _LoginPageState extends State<LoginPage> {
           );
         }
       } catch (e) {
-        String errorMessage = "Erreur technique";
-
-        if (e is SocketException) {
-          errorMessage = "Pas de connexion internet. Activez WiFi/mobile data.";
-        } else if (e is TimeoutException) {
-          errorMessage = "Temps d'attente dépassé. Le serveur ne répond pas.";
-        } else if (e is PlatformException) {
-          errorMessage = "Erreur système (${e.code}). Redémarrez l'application.";
-        } else {
-          errorMessage = "Problème technique inattendu. Code erreur: ${e.toString()}";
-        }
-
+        print('Erreur inattendue: $e');
+        String errorMessage = 'Erreur inattendue.';
+        if (e is TimeoutException)
+          if (e is TimeoutException) {
+            errorMessage = 'Temps d\'attente dépassé.';
+          }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -623,7 +526,7 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   Expanded(child: Text(errorMessage)),
                   IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: () {
                       ScaffoldMessenger.of(context).hideCurrentSnackBar();
                     },
@@ -631,8 +534,8 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
               backgroundColor: AppColors.errorColor,
-              behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -641,9 +544,8 @@ class _LoginPageState extends State<LoginPage> {
         }
       } finally {
         if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
+          setState(() => _isLoading = false);
+          print('Fin de la tentative de connexion email');
         }
       }
     }

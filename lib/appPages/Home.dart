@@ -276,7 +276,7 @@ class _HomePageState extends State<HomePage> {
           _buildHeader(isDarkMode),
           const SizedBox(height: 20),
           CircularChart(
-                userId: user?.uid ?? '',
+            userId: user?.uid ?? '',
           ),
           const SizedBox(height: 20),
           RevenusChart(
