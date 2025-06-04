@@ -245,11 +245,6 @@ class _LoginPageState extends State<LoginPage> {
                                       final userCredential = await Auth().signInWithGoogle();
                                       if (userCredential != null && mounted) {
                                         print('Connexion Google réussie pour ${userCredential.user?.email}');
-                                        print('Redirection vers RedirectionPage');
-                                        Navigator.pushReplacement(
-                                          context,
-                                          MaterialPageRoute(builder: (context) => const RedirectionPage()),
-                                        );
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Text(
@@ -262,8 +257,19 @@ class _LoginPageState extends State<LoginPage> {
                                             shape: RoundedRectangleBorder(
                                               borderRadius: BorderRadius.circular(10),
                                             ),
+                                            margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
                                           ),
                                         );
+                                        // Attendre que le SnackBar soit visible avant de naviguer
+                                        await Future.delayed(const Duration(seconds: 2));
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                          print('Redirection vers RedirectionPage');
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(builder: (context) => const RedirectionPage()),
+                                          );
+                                        }
                                       }
                                     } on FirebaseAuthException catch (e) {
                                       print('Erreur FirebaseAuthException: ${e.code} - ${e.message}');
@@ -308,6 +314,7 @@ class _LoginPageState extends State<LoginPage> {
                                             shape: RoundedRectangleBorder(
                                               borderRadius: BorderRadius.circular(10),
                                             ),
+                                            margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
                                           ),
                                         );
                                       }
@@ -334,6 +341,7 @@ class _LoginPageState extends State<LoginPage> {
                                             shape: RoundedRectangleBorder(
                                               borderRadius: BorderRadius.circular(10),
                                             ),
+                                            margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
                                           ),
                                         );
                                       }
@@ -442,11 +450,6 @@ class _LoginPageState extends State<LoginPage> {
         );
         if (mounted) {
           print('Connexion email réussie pour ${_emailController.text.trim()}');
-          print('Redirection vers RedirectionPage');
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const RedirectionPage()),
-          );
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -459,8 +462,19 @@ class _LoginPageState extends State<LoginPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
+              margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
             ),
           );
+          // Attendre que le SnackBar soit visible avant de naviguer
+          await Future.delayed(const Duration(seconds: 2));
+          if (mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            print('Redirection vers RedirectionPage');
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const RedirectionPage()),
+            );
+          }
         }
       } on FirebaseAuthException catch (e) {
         print('Erreur FirebaseAuthException: ${e.code} - ${e.message}');
@@ -508,16 +522,16 @@ class _LoginPageState extends State<LoginPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
+              margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
             ),
           );
         }
       } catch (e) {
         print('Erreur inattendue: $e');
         String errorMessage = 'Erreur inattendue.';
-        if (e is TimeoutException)
-          if (e is TimeoutException) {
-            errorMessage = 'Temps d\'attente dépassé.';
-          }
+        if (e is TimeoutException) {
+          errorMessage = 'Temps d\'attente dépassé.';
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -539,6 +553,7 @@ class _LoginPageState extends State<LoginPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
+              margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
             ),
           );
         }

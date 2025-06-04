@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 
 class RevenusChart extends StatefulWidget {
   final String userId;
+  final int selectedMonth;
 
   const RevenusChart({
     required this.userId,
+    required this.selectedMonth,
     Key? key,
   }) : super(key: key);
 
@@ -15,7 +17,6 @@ class RevenusChart extends StatefulWidget {
 }
 
 class _RevenusChartState extends State<RevenusChart> {
-  int selectedMonth = DateTime.now().month;
   late Stream<List<Map<String, dynamic>>> _revenusStream;
 
   @override
@@ -24,10 +25,20 @@ class _RevenusChartState extends State<RevenusChart> {
     _revenusStream = _fetchRevenusStream();
   }
 
+  @override
+  void didUpdateWidget(covariant RevenusChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedMonth != widget.selectedMonth) {
+      setState(() {
+        _revenusStream = _fetchRevenusStream();
+      });
+    }
+  }
+
   Stream<List<Map<String, dynamic>>> _fetchRevenusStream() {
     final now = DateTime.now();
-    final start = DateTime(now.year, selectedMonth, 1);
-    final end = DateTime(now.year, selectedMonth + 1, 1).subtract(const Duration(seconds: 1));
+    final start = DateTime(now.year, widget.selectedMonth, 1);
+    final end = DateTime(now.year, widget.selectedMonth + 1, 1).subtract(const Duration(seconds: 1));
 
     return FirebaseFirestore.instance
         .collection('revenus')
@@ -44,12 +55,6 @@ class _RevenusChartState extends State<RevenusChart> {
         'montant': (data['montant'] as num?)?.toDouble() ?? 0.0,
       };
     }).toList());
-  }
-
-  void _refreshData() {
-    setState(() {
-      _revenusStream = _fetchRevenusStream();
-    });
   }
 
   @override
@@ -73,27 +78,13 @@ class _RevenusChartState extends State<RevenusChart> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Revenus Mensuels',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colors.onSurface,
-                    fontSize: screenWidth * 0.05, // Responsive font size
-                  ),
-                ),
-                _MonthDropdown(
-                  selectedMonth: selectedMonth,
-                  onChanged: (value) {
-                    if (value != null && value != selectedMonth) {
-                      setState(() => selectedMonth = value);
-                      _refreshData();
-                    }
-                  },
-                ),
-              ],
+            Text(
+              'Revenus Mensuels',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colors.onSurface,
+                fontSize: screenWidth * 0.05, // Responsive font size
+              ),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -251,55 +242,5 @@ class _RevenusChartState extends State<RevenusChart> {
         ),
       ),
     );
-  }
-}
-
-class _MonthDropdown extends StatelessWidget {
-  final int selectedMonth;
-  final ValueChanged<int?> onChanged;
-
-  const _MonthDropdown({
-    required this.selectedMonth,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: colors.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: DropdownButton<int>(
-        value: selectedMonth,
-        underline: const SizedBox(),
-        icon: Icon(Icons.arrow_drop_down, color: colors.onSurface),
-        style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurface),
-        dropdownColor: colors.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-        items: List.generate(12, (index) => index + 1).map((month) {
-          return DropdownMenuItem<int>(
-            value: month,
-            child: Text(
-              _getMonthName(month),
-              style: theme.textTheme.bodyMedium,
-            ),
-          );
-        }).toList(),
-        onChanged: onChanged,
-      ),
-    );
-  }
-
-  String _getMonthName(int month) {
-    const monthNames = [
-      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-    ];
-    return monthNames[month - 1];
   }
 }

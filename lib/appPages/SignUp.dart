@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:budget_zen/services/firebase/auth.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +27,6 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController _nomCompletController = TextEditingController();
   final TextEditingController _telephoneController = TextEditingController();
   final TextEditingController _budgetController = TextEditingController();
-
 
   @override
   Widget build(BuildContext context) {
@@ -495,18 +495,36 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
             ),
             content: Text(
-              'Félicitations ! Votre compte a été créé avec l\'adresse : ${_emailController.text.trim()}\n\nVous pouvez maintenant accéder à toutes les fonctionnalités de BudgetZen.',
+              'Félicitations ! Votre compte a été créé avec l\'adresse : ${_emailController.text.trim()}\n\nVous pouvez maintenant continuer vers la page d\'accueil ou revenir à la page de connexion.',
               style: TextStyle(
                 color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor,
               ),
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () {
+                  Navigator.of(context).pop(); // Ferme la boîte de dialogue
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const RedirectionPage()),
+                  );
+                },
                 child: Text(
-                  'Continuer',
+                  'Page d\'accueil',
                   style: TextStyle(
                     color: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Ferme la boîte de dialogue
+                  Navigator.pushReplacementNamed(context, '/LoginPage');
+                },
+                child: Text(
+                  'Connexion',
+                  style: TextStyle(
+                    color: isDarkMode ? AppColors.darkSecondaryColor : AppColors.secondaryColor,
                   ),
                 ),
               ),
@@ -516,12 +534,6 @@ class _SignUpPageState extends State<SignUpPage> {
               borderRadius: BorderRadius.circular(15),
             ),
           ),
-        );
-
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const RedirectionPage()),
         );
       } on FirebaseAuthException catch (e) {
         String errorMessage;

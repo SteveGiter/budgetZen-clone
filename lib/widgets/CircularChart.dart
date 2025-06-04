@@ -4,9 +4,10 @@ import '../colors/app_colors.dart';
 import '../services/firebase/firestore.dart';
 
 class CircularChart extends StatefulWidget {
-  const CircularChart({super.key, required this.userId});
+  const CircularChart({super.key, required this.userId, required this.selectedMonth});
 
   final String userId;
+  final int selectedMonth;
 
   @override
   State<CircularChart> createState() => _CircularChartState();
@@ -31,24 +32,23 @@ class _CircularChartState extends State<CircularChart> {
     );
   }
 
-
   Widget _buildStatisticsStream(bool isDarkMode) {
     return StreamBuilder<double>(
-      stream: _firestoreService.streamTotalDepenses(widget.userId),
+      stream: _firestoreService.streamTotalDepensesByMonth(widget.userId, widget.selectedMonth),
       builder: (context, depensesSnapshot) {
         if (depensesSnapshot.hasError) {
           return Center(child: Text('Erreur de chargement des dépenses'));
         }
 
         return StreamBuilder<double>(
-          stream: _firestoreService.streamTotalRevenus(widget.userId),
+          stream: _firestoreService.streamTotalRevenusByMonth(widget.userId, widget.selectedMonth),
           builder: (context, revenusSnapshot) {
             if (revenusSnapshot.hasError) {
               return Center(child: Text('Erreur de chargement des revenus'));
             }
 
             return StreamBuilder<double>(
-              stream: _firestoreService.streamTotalEpargnes(widget.userId),
+              stream: _firestoreService.streamTotalEpargnesByMonth(widget.userId, widget.selectedMonth),
               builder: (context, epargnesSnapshot) {
                 if (epargnesSnapshot.hasError) {
                   return Center(child: Text('Erreur de chargement des épargnes'));
@@ -212,7 +212,7 @@ class _CircularChartState extends State<CircularChart> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Mois de ${_getCurrentMonth()} ${DateTime.now().year}',
+          'Mois de ${_getMonthName(widget.selectedMonth)} ${DateTime.now().year}',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -255,11 +255,11 @@ class _CircularChartState extends State<CircularChart> {
     );
   }
 
-  String _getCurrentMonth() {
+  String _getMonthName(int month) {
     const months = [
       'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
       'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
     ];
-    return months[DateTime.now().month - 1];
+    return months[month - 1];
   }
 }

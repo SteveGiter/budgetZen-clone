@@ -53,6 +53,7 @@ class _HomePageState extends State<HomePage> {
   double revenus = 0.0;
   double epargnes = 0.0;
   bool isExpanded = false;
+  int selectedMonth = DateTime.now().month;
 
   StreamSubscription<DocumentSnapshot>? _userSubscription;
   StreamSubscription<double>? _depensesSubscription;
@@ -96,6 +97,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadUserData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
+      // Stream pour le budget actuel
       _userSubscription = FirebaseFirestore.instance
           .collection('budgets')
           .doc(user.uid)
@@ -109,36 +111,58 @@ class _HomePageState extends State<HomePage> {
         }
       });
 
-      depenses = await _firestoreService.getTotalDepenses(user.uid);
-      _depensesSubscription = _firestoreService.streamTotalDepenses(user.uid)
-          .listen((total) {
-        if (mounted) {
-          setState(() {
-            depenses = total;
-          });
-        }
-      });
-
-      revenus = await _firestoreService.getTotalRevenus(user.uid);
-      _revenusSubscription = _firestoreService.streamTotalRevenus(user.uid)
-          .listen((total) {
-        if (mounted) {
-          setState(() {
-            revenus = total;
-          });
-        }
-      });
-
-      epargnes = await _firestoreService.getTotalEpargnes(user.uid);
-      _epargnesSubscription = _firestoreService.streamTotalEpargnes(user.uid)
-          .listen((total) {
-        if (mounted) {
-          setState(() {
-            epargnes = total;
-          });
-        }
-      });
+      // Streams pour les totaux mensuels
+      _updateSubscriptions(user.uid);
     }
+  }
+
+  void _updateSubscriptions(String userId) {
+    // Annuler les abonnements existants
+    _depensesSubscription?.cancel();
+    _revenusSubscription?.cancel();
+    _epargnesSubscription?.cancel();
+
+    // Charger les données initiales
+    _firestoreService.getTotalDepenses(userId).then((total) {
+      if (mounted) setState(() => depenses = total);
+    });
+    _firestoreService.getTotalRevenus(userId).then((total) {
+      if (mounted) setState(() => revenus = total);
+    });
+    _firestoreService.getTotalEpargnes(userId).then((total) {
+      if (mounted) setState(() => epargnes = total);
+    });
+
+    // S'abonner aux streams mensuels
+    _depensesSubscription = _firestoreService
+        .streamTotalDepensesByMonth(userId, selectedMonth)
+        .listen((total) {
+      if (mounted) {
+        setState(() {
+          depenses = total;
+        });
+      }
+    });
+
+    _revenusSubscription = _firestoreService
+        .streamTotalRevenusByMonth(userId, selectedMonth)
+        .listen((total) {
+      if (mounted) {
+        setState(() {
+          revenus = total;
+        });
+      }
+    });
+
+    _epargnesSubscription = _firestoreService
+        .streamTotalEpargnesByMonth(userId, selectedMonth)
+        .listen((total) {
+      if (mounted) {
+        setState(() {
+          epargnes = total;
+        });
+      }
+    });
   }
 
   @override
@@ -154,19 +178,38 @@ class _HomePageState extends State<HomePage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 30),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(
-            Icons.bar_chart,
-            color: isDarkMode ? AppColors.darkSecondaryColor : Colors.blue.shade800,
-            size: 50,
+          Row(
+            children: [
+              Icon(
+                Icons.bar_chart,
+                color: isDarkMode ? AppColors.darkSecondaryColor : Colors.blue.shade800,
+                size: 50,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Statistiques',
+                style: TextStyle(
+                  fontSize: 20,
+                  color: isDarkMode ? AppColors.darkSecondaryColor : Colors.blue.shade800,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Text(
-            'Statistiques',
-            style: TextStyle(
-              fontSize: 20,
-              color: isDarkMode ? AppColors.darkSecondaryColor : Colors.blue.shade800,
-            ),
+          _MonthDropdown(
+            selectedMonth: selectedMonth,
+            onChanged: (value) {
+              if (value != null && value != selectedMonth) {
+                setState(() {
+                  selectedMonth = value;
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user != null) {
+                    _updateSubscriptions(user.uid);
+                  }
+                });
+              }
+            },
           ),
         ],
       ),
@@ -195,10 +238,18 @@ class _HomePageState extends State<HomePage> {
               itemBuilder: (BuildContext context, int index) {
                 double montant = 0.0;
                 switch (index) {
-                  case 0: montant = budget; break;
-                  case 1: montant = depenses; break;
-                  case 2: montant = revenus; break;
-                  case 3: montant = epargnes; break;
+                  case 0:
+                    montant = budget;
+                    break;
+                  case 1:
+                    montant = depenses;
+                    break;
+                  case 2:
+                    montant = revenus;
+                    break;
+                  case 3:
+                    montant = epargnes;
+                    break;
                 }
 
                 return Padding(
@@ -277,25 +328,29 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 20),
           CircularChart(
             userId: user?.uid ?? '',
+            selectedMonth: selectedMonth,
           ),
           const SizedBox(height: 20),
           RevenusChart(
             userId: user?.uid ?? '',
+            selectedMonth: selectedMonth,
           ),
           const SizedBox(height: 20),
           DepensesChart(
             userId: user?.uid ?? '',
+            selectedMonth: selectedMonth,
           ),
           const SizedBox(height: 20),
           EpargnesChart(
             userId: user?.uid ?? '',
+            selectedMonth: selectedMonth,
           ),
         ],
       ),
       floatingActionButton: Stack(
         children: [
           Positioned(
-            bottom: 70,
+            bottom: 16,
             right: 16,
             child: FloatingActionButton(
               shape: const CircleBorder(),
@@ -313,7 +368,7 @@ class _HomePageState extends State<HomePage> {
           ),
           if (isExpanded) ...[
             Positioned(
-              bottom: 130,
+              bottom: 80,
               right: 16,
               child: Tooltip(
                 message: "Ajouter un revenu",
@@ -328,7 +383,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Positioned(
-              bottom: 190,
+              bottom: 144,
               right: 16,
               child: Tooltip(
                 message: "Ajouter une dépense",
@@ -343,7 +398,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Positioned(
-              bottom: 250,
+              bottom: 208,
               right: 16,
               child: Tooltip(
                 message: "Ajouter une épargne",
@@ -366,7 +421,7 @@ class _HomePageState extends State<HomePage> {
           if (index != 0) {
             Navigator.pushReplacementNamed(
               context,
-              index == 1 ? '/TransactionPage' : '/ProfilePage',
+              index == 1 ? '/TransactionPage' : '/SettingsPage',
             );
           }
         },
@@ -633,24 +688,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _addIncome(double amount, String category, String description) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = await FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
-      await _firestoreService.firestore
-          .collection('revenus')
-          .add({
-        'userId': user.uid,
-        'montant': amount,
-        'categorie': category,
-        'description': description.isNotEmpty ? description : null,
-        'dateCreation': FieldValue.serverTimestamp(),
-      });
+      await _firestoreService.addRevenu(
+        userId: user.uid,
+        montant: amount,
+        categorie: category,
+        description: description.isNotEmpty ? description : null,
+      );
 
-      await _firestoreService.firestore
-          .collection('budgets')
-          .doc(user.uid)
-          .update({
+      await _firestoreService.firestore.collection('budgets').doc(user.uid).update({
         'budgetActuel': FieldValue.increment(amount),
       });
 
@@ -663,7 +712,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text('Revenu de ${amount.toStringAsFixed(2)} FCFA ajouté'),
               ),
               IconButton(
-                icon: Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 },
@@ -672,6 +721,8 @@ class _HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         ),
       );
     } catch (e) {
@@ -684,7 +735,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text('Erreur: ${e.toString()}'),
               ),
               IconButton(
-                icon: Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 },
@@ -693,18 +744,19 @@ class _HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         ),
       );
     }
   }
 
   Future<void> _addExpense(double amount, String category, String description) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = await FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
-      final firestoreService = FirestoreService();
-      final budgetDoc = await firestoreService.firestore.collection('budgets').doc(user.uid).get();
+      final budgetDoc = await _firestoreService.firestore.collection('budgets').doc(user.uid).get();
       final currentBudget = (budgetDoc.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
 
       if ((currentBudget - amount) < 0) {
@@ -713,9 +765,9 @@ class _HomePageState extends State<HomePage> {
             content: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: Text('Opération impossible: budget insuffisant')),
+                const Expanded(child: Text('Opération impossible: budget insuffisant')),
                 IconButton(
-                  icon: Icon(Icons.close, color: Colors.white),
+                  icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () {
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   },
@@ -723,25 +775,22 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
           ),
         );
         return;
       }
 
-      await _firestoreService.firestore
-          .collection('depenses')
-          .add({
-        'userId': user.uid,
-        'montant': amount,
-        'categorie': category,
-        'description': description.isNotEmpty ? description : null,
-        'dateCreation': FieldValue.serverTimestamp(),
-      });
+      await _firestoreService.addDepense(
+        userId: user.uid,
+        montant: amount,
+        categorie: category,
+        description: description.isNotEmpty ? description : null,
+      );
 
-      await _firestoreService.firestore
-          .collection('budgets')
-          .doc(user.uid)
-          .update({
+      await _firestoreService.firestore.collection('budgets').doc(user.uid).update({
         'budgetActuel': FieldValue.increment(-amount),
       });
 
@@ -752,7 +801,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               Expanded(child: Text('Dépense de ${amount.toStringAsFixed(2)} FCFA ajoutée')),
               IconButton(
-                icon: Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 },
@@ -761,6 +810,8 @@ class _HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         ),
       );
     } catch (e) {
@@ -773,7 +824,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text('Erreur: ${e.toString()}'),
               ),
               IconButton(
-                icon: Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 },
@@ -782,18 +833,19 @@ class _HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         ),
       );
     }
   }
 
   Future<void> _addSavings(double amount, String category, String description) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = await FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
-      final firestoreService = FirestoreService();
-      final budgetDoc = await firestoreService.firestore.collection('budgets').doc(user.uid).get();
+      final budgetDoc = await _firestoreService.firestore.collection('budgets').doc(user.uid).get();
       final currentBudget = (budgetDoc.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
 
       if ((currentBudget - amount) < 0) {
@@ -802,9 +854,9 @@ class _HomePageState extends State<HomePage> {
             content: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: Text('Opération impossible: budget insuffisant')),
+                const Expanded(child: Text('Opération impossible: budget insuffisant')),
                 IconButton(
-                  icon: Icon(Icons.close, color: Colors.white),
+                  icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () {
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   },
@@ -812,25 +864,22 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
           ),
         );
         return;
       }
 
-      await _firestoreService.firestore
-          .collection('epargnes')
-          .add({
-        'userId': user.uid,
-        'montant': amount,
-        'categorie': category,
-        'description': description.isNotEmpty ? description : null,
-        'dateCreation': FieldValue.serverTimestamp(),
-      });
+      await _firestoreService.addEpargne(
+        userId: user.uid,
+        montant: amount,
+        categorie: category,
+        description: description.isNotEmpty ? description : null,
+      );
 
-      await _firestoreService.firestore
-          .collection('budgets')
-          .doc(user.uid)
-          .update({
+      await _firestoreService.firestore.collection('budgets').doc(user.uid).update({
         'budgetActuel': FieldValue.increment(-amount),
       });
 
@@ -843,7 +892,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text('Épargne de ${amount.toStringAsFixed(2)} FCFA ajoutée'),
               ),
               IconButton(
-                icon: Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 },
@@ -852,6 +901,8 @@ class _HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         ),
       );
     } catch (e) {
@@ -864,7 +915,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text('Erreur: ${e.toString()}'),
               ),
               IconButton(
-                icon: Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 },
@@ -873,8 +924,70 @@ class _HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         ),
       );
     }
+  }
+}
+
+class _MonthDropdown extends StatelessWidget {
+  final int selectedMonth;
+  final ValueChanged<int?> onChanged;
+
+  const _MonthDropdown({
+    required this.selectedMonth,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: colors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: DropdownButton<int>(
+        value: selectedMonth,
+        underline: const SizedBox(),
+        icon: Icon(Icons.arrow_drop_down, color: colors.onSurface),
+        style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurface),
+        dropdownColor: colors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+        items: List.generate(12, (index) => index + 1).map((month) {
+          return DropdownMenuItem<int>(
+            value: month,
+            child: Text(
+              _getMonthName(month),
+              style: theme.textTheme.bodyMedium,
+            ),
+          );
+        }).toList(),
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  String _getMonthName(int month) {
+    const monthNames = [
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre'
+    ];
+    return monthNames[month - 1];
   }
 }
