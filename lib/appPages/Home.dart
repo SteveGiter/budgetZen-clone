@@ -347,10 +347,11 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+// Modifier la partie floatingActionButton dans le build
       floatingActionButton: Stack(
         children: [
           Positioned(
-            bottom: 16,
+            bottom: 70,
             right: 16,
             child: FloatingActionButton(
               shape: const CircleBorder(),
@@ -368,7 +369,7 @@ class _HomePageState extends State<HomePage> {
           ),
           if (isExpanded) ...[
             Positioned(
-              bottom: 80,
+              bottom: 130,
               right: 16,
               child: Tooltip(
                 message: "Ajouter un revenu",
@@ -383,7 +384,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Positioned(
-              bottom: 144,
+              bottom: 190,
               right: 16,
               child: Tooltip(
                 message: "Ajouter une dépense",
@@ -398,7 +399,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Positioned(
-              bottom: 208,
+              bottom: 250,
               right: 16,
               child: Tooltip(
                 message: "Ajouter une épargne",
@@ -687,19 +688,26 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+// Dans la méthode _addIncome (remplacer toute la méthode existante)
   Future<void> _addIncome(double amount, String category, String description) async {
-    final user = await FirebaseAuth.instance.currentUser;
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
-      await _firestoreService.addRevenu(
-        userId: user.uid,
-        montant: amount,
-        categorie: category,
-        description: description.isNotEmpty ? description : null,
-      );
+      await _firestoreService.firestore
+          .collection('revenus')
+          .add({
+        'userId': user.uid,
+        'montant': amount,
+        'categorie': category,
+        'description': description.isNotEmpty ? description : null,
+        'dateCreation': FieldValue.serverTimestamp(),
+      });
 
-      await _firestoreService.firestore.collection('budgets').doc(user.uid).update({
+      await _firestoreService.firestore
+          .collection('budgets')
+          .doc(user.uid)
+          .update({
         'budgetActuel': FieldValue.increment(amount),
       });
 
@@ -712,7 +720,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text('Revenu de ${amount.toStringAsFixed(2)} FCFA ajouté'),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 },
@@ -721,8 +729,6 @@ class _HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         ),
       );
     } catch (e) {
@@ -735,7 +741,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text('Erreur: ${e.toString()}'),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 },
@@ -744,19 +750,20 @@ class _HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         ),
       );
     }
   }
 
+// Dans la méthode _addExpense (remplacer toute la méthode existante)
   Future<void> _addExpense(double amount, String category, String description) async {
-    final user = await FirebaseAuth.instance.currentUser;
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
-      final budgetDoc = await _firestoreService.firestore.collection('budgets').doc(user.uid).get();
+      // Vérifier que le budget ne deviendra pas négatif
+      final firestoreService = FirestoreService();
+      final budgetDoc = await firestoreService.firestore.collection('budgets').doc(user.uid).get();
       final currentBudget = (budgetDoc.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
 
       if ((currentBudget - amount) < 0) {
@@ -765,9 +772,9 @@ class _HomePageState extends State<HomePage> {
             content: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Expanded(child: Text('Opération impossible: budget insuffisant')),
+                Expanded(child: Text('Opération impossible: budget insuffisant')),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
+                  icon: Icon(Icons.close, color: Colors.white),
                   onPressed: () {
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   },
@@ -775,22 +782,25 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
           ),
         );
         return;
       }
 
-      await _firestoreService.addDepense(
-        userId: user.uid,
-        montant: amount,
-        categorie: category,
-        description: description.isNotEmpty ? description : null,
-      );
+      await _firestoreService.firestore
+          .collection('depenses')
+          .add({
+        'userId': user.uid,
+        'montant': amount,
+        'categorie': category,
+        'description': description.isNotEmpty ? description : null,
+        'dateCreation': FieldValue.serverTimestamp(),
+      });
 
-      await _firestoreService.firestore.collection('budgets').doc(user.uid).update({
+      await _firestoreService.firestore
+          .collection('budgets')
+          .doc(user.uid)
+          .update({
         'budgetActuel': FieldValue.increment(-amount),
       });
 
@@ -799,9 +809,11 @@ class _HomePageState extends State<HomePage> {
           content: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text('Dépense de ${amount.toStringAsFixed(2)} FCFA ajoutée')),
+              Expanded(
+                child: Text('Dépense de ${amount.toStringAsFixed(2)} FCFA ajoutée'),
+              ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 },
@@ -810,8 +822,6 @@ class _HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         ),
       );
     } catch (e) {
@@ -824,7 +834,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text('Erreur: ${e.toString()}'),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 },
@@ -833,19 +843,20 @@ class _HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         ),
       );
     }
   }
 
+// Dans la méthode _addSavings (remplacer toute la méthode existante)
   Future<void> _addSavings(double amount, String category, String description) async {
-    final user = await FirebaseAuth.instance.currentUser;
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
-      final budgetDoc = await _firestoreService.firestore.collection('budgets').doc(user.uid).get();
+      // Vérifier que le budget ne deviendra pas négatif
+      final firestoreService = FirestoreService();
+      final budgetDoc = await firestoreService.firestore.collection('budgets').doc(user.uid).get();
       final currentBudget = (budgetDoc.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
 
       if ((currentBudget - amount) < 0) {
@@ -854,9 +865,9 @@ class _HomePageState extends State<HomePage> {
             content: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Expanded(child: Text('Opération impossible: budget insuffisant')),
+                Expanded(child: Text('Opération impossible: budget insuffisant')),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
+                  icon: Icon(Icons.close, color: Colors.white),
                   onPressed: () {
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   },
@@ -864,22 +875,26 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
           ),
         );
         return;
       }
 
-      await _firestoreService.addEpargne(
-        userId: user.uid,
-        montant: amount,
-        categorie: category,
-        description: description.isNotEmpty ? description : null,
-      );
+      await _firestoreService.firestore
+          .collection('epargnes')
+          .add({
+        'userId': user.uid,
+        'montant': amount,
+        'categorie': category,
+        'description': description.isNotEmpty ? description : null,
+        'dateCreation': FieldValue.serverTimestamp(),
+      });
 
-      await _firestoreService.firestore.collection('budgets').doc(user.uid).update({
+      // Mettre à jour le budget
+      await _firestoreService.firestore
+          .collection('budgets')
+          .doc(user.uid)
+          .update({
         'budgetActuel': FieldValue.increment(-amount),
       });
 
@@ -892,7 +907,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text('Épargne de ${amount.toStringAsFixed(2)} FCFA ajoutée'),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 },
@@ -901,8 +916,6 @@ class _HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         ),
       );
     } catch (e) {
@@ -915,7 +928,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text('Erreur: ${e.toString()}'),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 },
@@ -924,8 +937,6 @@ class _HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.only(bottom: 100, left: 16, right: 16),
         ),
       );
     }
