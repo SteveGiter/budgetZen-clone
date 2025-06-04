@@ -22,7 +22,7 @@ class _TransactionState extends State<Transaction> {
   ];
   final List<String> _pageTitles = [
     'Historique des transactions',
-    'Effectuer une transaction',
+    'Transfert d\'argent',
   ];
 
   @override

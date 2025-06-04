@@ -92,6 +92,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+
   Widget _buildSectionCard({
     required String title,
     required List<Widget> children,
@@ -122,60 +123,67 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildNavigationCard({
+  Widget _buildSettingItem({
     required String title,
     required IconData icon,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
     String? subtitle,
+    Widget? trailing,
+    bool showDivider = true,
   }) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
+    return Column(
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              children: [
+                Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: AppColors.primaryColor.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, color: AppColors.primaryColor)),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    if (subtitle != null)
+                  child: Icon(icon, color: AppColors.primaryColor),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
-                  ],
+                      if (subtitle != null)
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
-            ],
+                trailing ?? const Icon(Icons.chevron_right, color: Colors.grey),
+              ],
+            ),
           ),
         ),
-      ),
+        if (showDivider)
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: Theme.of(context).dividerColor
+            ,
+          ),
+      ],
     );
   }
 
@@ -265,11 +273,12 @@ class _SettingsPageState extends State<SettingsPage> {
               _buildSectionCard(
                 title: 'Compte',
                 children: [
-                  _buildNavigationCard(
+                  _buildSettingItem(
                     icon: Icons.person_outline,
                     title: 'Mon profil',
                     subtitle: 'Modifier vos informations personnelles',
                     onTap: _navigateToProfile,
+                    showDivider: false,
                   ),
                 ],
               ),
@@ -280,7 +289,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Consumer<ThemeNotifier>(
                     builder: (context, themeNotifier, child) {
-                      return _buildNavigationCard(
+                      return _buildSettingItem(
                         icon: themeNotifier.isDark
                             ? Icons.dark_mode
                             : Icons.light_mode,
@@ -290,55 +299,17 @@ class _SettingsPageState extends State<SettingsPage> {
                       );
                     },
                   ),
-                  Card(
-                    elevation: 2,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                  _buildSettingItem(
+                    icon: Icons.notifications_outlined,
+                    title: 'Notifications',
+                    subtitle: 'Activer/désactiver les notifications',
+                    onTap: null,
+                    trailing: Switch(
+                      value: _notificationsEnabled,
+                      onChanged: _toggleNotifications,
+                      activeColor: AppColors.primaryColor,
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryColor.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(Icons.notifications_outlined,
-                                color: AppColors.primaryColor),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Notifications',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                Text(
-                                  'Activer/désactiver les notifications',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch(
-                            value: _notificationsEnabled,
-                            onChanged: _toggleNotifications,
-                            activeColor: AppColors.primaryColor,
-                          ),
-                        ],
-                      ),
-                    ),
+                    showDivider: false,
                   ),
                 ],
               ),
@@ -347,19 +318,23 @@ class _SettingsPageState extends State<SettingsPage> {
               _buildSectionCard(
                 title: 'Support',
                 children: [
-                  _buildNavigationCard(
+                  _buildSettingItem(
                     icon: Icons.help_outline,
                     title: 'Aide & Support',
                     subtitle: 'FAQ et contact du support',
                     onTap: _navigateToHelp,
                   ),
-                  _buildNavigationCard(
+                  _buildSettingItem(
                     icon: Icons.info_outline,
                     title: 'À propos',
                     subtitle: 'Version et informations légales',
                     onTap: () {
-                      // Naviguer vers la page À propos
+                      Navigator.pushNamed(
+                        context,
+                        '/AboutPage',
+                      );
                     },
+                    showDivider: false,
                   ),
                 ],
               ),

@@ -16,6 +16,16 @@ class _MoneyTransferPageState extends State<MoneyTransferPage> {
   final TextEditingController _amountController = TextEditingController();
   String _selectedCountryCode = '+237';
   String? _selectedCategory;
+  String _selectedOperator = 'orange'; // 'orange' ou 'mtn'
+
+  // Couleurs pour Orange Money
+  static const Color _orangePrimary = Color(0xFFFF7900);
+  static const Color _orangeLight = Color(0xFFFF9E40);
+
+  // Couleurs pour MTN Mobile Money
+  static const Color _mtnPrimary = Color(0xFFFFCC00);
+  static const Color _mtnDark = Color(0xFFF5B800);
+  static const Color _mtnLight = Color(0xFFFFE040);
 
   final Map<String, String> _countryCodes = {
     '+237': '🇨🇲 Cameroun',
@@ -39,7 +49,14 @@ class _MoneyTransferPageState extends State<MoneyTransferPage> {
     {'value': 'Transport', 'label': '🚗 Transport'},
     {'value': 'Loisirs', 'label': '🎭 Loisirs'},
     {'value': 'Factures', 'label': '💡 Factures'},
+    {'value': 'Autre', 'label': '  ❓ Autre'},
   ];
+
+  // Getters pour les couleurs dynamiques
+  Color get _primaryColor => _selectedOperator == 'orange' ? _orangePrimary : _mtnPrimary;
+  Color get _primaryLight => _selectedOperator == 'orange' ? _orangeLight : _mtnLight;
+  Color get _primaryDark => _selectedOperator == 'orange' ? _orangePrimary : _mtnDark;
+  Color get _textColor => _selectedOperator == 'orange' ? Colors.white : Colors.black;
 
   @override
   Widget build(BuildContext context) {
@@ -47,18 +64,16 @@ class _MoneyTransferPageState extends State<MoneyTransferPage> {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Transfert d\'argent'),
-        centerTitle: true,
-        elevation: 0,
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            // Sélection d'opérateur
+            _buildOperatorSelector(isDarkMode),
+            const SizedBox(height: 20),
             // Header avec illustration
             _buildHeaderSection(isDarkMode, screenWidth),
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
             // Formulaire de transfert
             Card(
               elevation: 3,
@@ -76,9 +91,85 @@ class _MoneyTransferPageState extends State<MoneyTransferPage> {
                     const SizedBox(height: 20),
                     _buildCategoryDropdown(isDarkMode),
                     const SizedBox(height: 30),
-                    _buildTransferButton(isDarkMode),
+                    _buildTransferButton(),
                   ],
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOperatorSelector(bool isDarkMode) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildOperatorButton(
+            label: 'Orange Money',
+            imagePath: 'assets/orange_money_logo.png',
+            isSelected: _selectedOperator == 'orange',
+            onTap: () => setState(() => _selectedOperator = 'orange'),
+          ),
+          Container(
+            height: 30,
+            width: 1,
+            color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
+          ),
+          _buildOperatorButton(
+            label: 'MTN Mobile',
+            imagePath: 'assets/mtn_momo_logo.png',
+            isSelected: _selectedOperator == 'mtn',
+            onTap: () => setState(() => _selectedOperator = 'mtn'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOperatorButton({
+    required String label,
+    required String imagePath,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? _primaryColor.withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              imagePath,
+              height: 30,
+              width: 30,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.money,
+                  size: 30,
+                  color: isSelected ? _primaryColor : Colors.grey,
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? _primaryColor : Colors.grey[700],
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ],
@@ -90,25 +181,17 @@ class _MoneyTransferPageState extends State<MoneyTransferPage> {
   Widget _buildHeaderSection(bool isDarkMode, double screenWidth) {
     return Column(
       children: [
-        // Make sure this path matches where you placed the file
-        Image.asset(
-          'assets/orange_money_logo.png', // or your actual path
-          height: 80,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            return Icon(Icons.money, size: 80); // Fallback widget if image fails to load
-          },
-        ),
-        const SizedBox(height: 10),
         Text(
-          'Transfert Orange Money',
+          _selectedOperator == 'orange'
+              ? 'Orange Money'
+              : 'MTN Mobile Money',
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : Colors.orange[800],
+            color: _primaryColor,
           ),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 8),
         Text(
           'Envoyez de l\'argent en toute sécurité',
           style: TextStyle(
@@ -185,7 +268,7 @@ class _MoneyTransferPageState extends State<MoneyTransferPage> {
                   contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
                   prefixIcon: Icon(
                     Icons.phone_android,
-                    color: isDarkMode ? Colors.orange[200] : Colors.orange,
+                    color: _primaryLight,
                   ),
                 ),
               ),
@@ -223,7 +306,7 @@ class _MoneyTransferPageState extends State<MoneyTransferPage> {
             contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
             prefixIcon: Icon(
               Icons.money,
-              color: isDarkMode ? Colors.orange[200] : Colors.orange,
+              color: _primaryLight,
             ),
             suffixText: 'FCFA',
             suffixStyle: TextStyle(
@@ -291,13 +374,14 @@ class _MoneyTransferPageState extends State<MoneyTransferPage> {
     );
   }
 
-  Widget _buildTransferButton(bool isDarkMode) {
+  Widget _buildTransferButton() {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         onPressed: _handleTransfer,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
+          backgroundColor: _primaryColor,
+          foregroundColor: _textColor,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -307,7 +391,6 @@ class _MoneyTransferPageState extends State<MoneyTransferPage> {
         child: const Text(
           'TRANSFÉRER',
           style: TextStyle(
-            color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.bold,
             letterSpacing: 1,

@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'appPages/About.dart';
 import 'appPages/Home.dart';
 import 'appPages/Login.dart';
 import 'appPages/Profile.dart';
@@ -173,6 +174,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             '/TransactionPage': (context) => const Transaction(),
             '/SettingsPage': (context) => const SettingsPage(),
             '/ProfilePage': (context) => const ProfilePage(),
+            '/AboutPage': (context) => AboutPage(),
           },
 
           // Routes personnalisées (fallback)
