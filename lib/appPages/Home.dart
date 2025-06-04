@@ -61,31 +61,31 @@ class _HomePageState extends State<HomePage> {
   StreamSubscription<double>? _epargnesSubscription;
   final FirestoreService _firestoreService = FirestoreService();
 
-  final List<String> revenuCategories = [
-    'Salaire',
-    'Investissement',
-    'Cadeau',
-    'Vente',
-    'Autre'
+  final List<Map<String, String>> revenuCategories = [
+    {'value': 'Salaire', 'label': '💰 Salaire'},
+    {'value': 'Investissement', 'label': '📈 Investissement'},
+    {'value': 'Cadeau', 'label': '🎁 Cadeau'},
+    {'value': 'Vente', 'label': '🛒 Vente'},
+    {'value': 'Autre', 'label': '❓ Autre'},
   ];
 
-  final List<String> depenseCategories = [
-    'Nourriture',
-    'Transport',
-    'Logement',
-    'Loisirs',
-    'Santé',
-    'Éducation',
-    'Autre'
+  final List<Map<String, String>> depenseCategories = [
+    {'value': 'Nourriture', 'label': '🍔 Nourriture'},
+    {'value': 'Transport', 'label': '🚗 Transport'},
+    {'value': 'Logement', 'label': '🏠 Logement'},
+    {'value': 'Loisirs', 'label': '🎭 Loisirs'},
+    {'value': 'Santé', 'label': '🏥 Santé'},
+    {'value': 'Éducation', 'label': '📚 Éducation'},
+    {'value': 'Autre', 'label': '❓ Autre'},
   ];
 
-  final List<String> epargneCategories = [
-    'Prévisionnel',
-    'Projet',
-    'Urgence',
-    'Retraite',
-    'Investissement',
-    'Autre'
+  final List<Map<String, String>> epargneCategories = [
+    {'value': 'Prévisionnel', 'label': '📅 Prévisionnel'},
+    {'value': 'Projet', 'label': '🎯 Projet'},
+    {'value': 'Urgence', 'label': '🚨 Urgence'},
+    {'value': 'Retraite', 'label': '👴 Retraite'},
+    {'value': 'Investissement', 'label': '📈 Investissement'},
+    {'value': 'Autre', 'label': '❓ Autre'},
   ];
 
   @override
@@ -224,8 +224,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Accueil',
-        showBackArrow: true,
-        backDestination: '/LoginPage',
+        showBackArrow: false,
         showDarkModeButton: true,
       ),
       body: ListView(
@@ -347,13 +346,15 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-// Modifier la partie floatingActionButton dans le build
+
+      // Modifier la partie floatingActionButton dans le build
       floatingActionButton: Stack(
         children: [
           Positioned(
             bottom: 70,
             right: 16,
             child: FloatingActionButton(
+              heroTag: 'main-fab',
               shape: const CircleBorder(),
               backgroundColor: isDarkMode ? AppColors.darkSecondaryColor : Colors.blueAccent,
               child: Icon(
@@ -374,6 +375,7 @@ class _HomePageState extends State<HomePage> {
               child: Tooltip(
                 message: "Ajouter un revenu",
                 child: FloatingActionButton(
+                  heroTag: 'income-fab',
                   shape: const CircleBorder(),
                   backgroundColor: isDarkMode ? AppColors.darkSecondaryColor : Colors.greenAccent,
                   child: const Icon(Icons.monetization_on, color: Colors.white),
@@ -389,6 +391,7 @@ class _HomePageState extends State<HomePage> {
               child: Tooltip(
                 message: "Ajouter une dépense",
                 child: FloatingActionButton(
+                  heroTag: 'expense-fab',
                   shape: const CircleBorder(),
                   backgroundColor: isDarkMode ? AppColors.darkSecondaryColor : Colors.pinkAccent,
                   child: const Icon(Icons.shopping_basket, color: Colors.white),
@@ -404,6 +407,7 @@ class _HomePageState extends State<HomePage> {
               child: Tooltip(
                 message: "Ajouter une épargne",
                 child: FloatingActionButton(
+                  heroTag: 'savings-fab',
                   shape: const CircleBorder(),
                   backgroundColor: isDarkMode ? AppColors.darkSecondaryColor : Colors.blueAccent,
                   child: const Icon(Icons.savings, color: Colors.white),
@@ -416,6 +420,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ],
       ),
+
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 0,
         onTabSelected: (index) {
@@ -433,7 +438,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _showAddIncomeDialog(BuildContext context) async {
     final amountController = TextEditingController();
     final descriptionController = TextEditingController();
-    String selectedCategory = revenuCategories[0];
+    String selectedCategory = revenuCategories[0]['value']!;
     final formKey = GlobalKey<FormState>();
 
     await showDialog(
@@ -466,10 +471,10 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: selectedCategory,
-                  items: revenuCategories.map((String category) {
+                  items: revenuCategories.map((Map<String, String> category) {
                     return DropdownMenuItem<String>(
-                      value: category,
-                      child: Text(category),
+                      value: category['value'],
+                      child: Text(category['label']!),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {
@@ -519,7 +524,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _showAddExpenseDialog(BuildContext context) async {
     final amountController = TextEditingController();
     final descriptionController = TextEditingController();
-    String selectedCategory = depenseCategories[0];
+    String selectedCategory = depenseCategories[0]['value']!;
     final formKey = GlobalKey<FormState>();
 
     await showDialog(
@@ -552,10 +557,10 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: selectedCategory,
-                  items: depenseCategories.map((String category) {
+                  items: depenseCategories.map((Map<String, String> category) {
                     return DropdownMenuItem<String>(
-                      value: category,
-                      child: Text(category),
+                      value: category['value'],
+                      child: Text(category['label']!),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {
@@ -605,7 +610,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _showAddSavingsDialog(BuildContext context) async {
     final amountController = TextEditingController();
     final descriptionController = TextEditingController();
-    String selectedCategory = epargneCategories[0];
+    String selectedCategory = epargneCategories[0]['value']!;
     final formKey = GlobalKey<FormState>();
 
     await showDialog(
@@ -638,10 +643,10 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: selectedCategory,
-                  items: epargneCategories.map((String category) {
+                  items: epargneCategories.map((Map<String, String> category) {
                     return DropdownMenuItem<String>(
-                      value: category,
-                      child: Text(category),
+                      value: category['value'],
+                      child: Text(category['label']!),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {

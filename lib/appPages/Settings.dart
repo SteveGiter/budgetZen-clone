@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Added for currentUser
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../colors/app_colors.dart';
 import '../main.dart';
 import '../utils/logout_utils.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
-
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -16,30 +16,54 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _notificationsEnabled = true; // État par défaut pour les notifications
-  User? _currentUser; // Store current user
+  bool _notificationsEnabled = true;
+  User? _currentUser;
+  String _userName = "Non renseigné";
 
   @override
   void initState() {
     super.initState();
-    _currentUser = FirebaseAuth.instance.currentUser; // Fetch current user on init
+    _currentUser = FirebaseAuth.instance.currentUser;
+    if (_currentUser != null) {
+      _loadUserData();
+    }
   }
 
-  // Getter for notificationsEnabled
-  bool get notificationsEnabled => _notificationsEnabled;
+  Future<void> _loadUserData() async {
+    final userDoc = await FirebaseFirestore.instance
+        .collection('utilisateurs')
+        .doc(_currentUser!.uid)
+        .get();
 
-  // Getter for currentUser
-  User? get currentUser => _currentUser;
+    if (userDoc.exists) {
+      setState(() {
+        _userName = userDoc.data()?['nomPrenom'] ?? "Non renseigné";
+      });
+    }
+  }
 
   void _toggleNotifications(bool value) {
     setState(() {
       _notificationsEnabled = value;
     });
-    // TODO: Ajouter la logique pour activer/désactiver les notifications via Firebase ou autre service
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          value ? 'Notifications activées' : 'Notifications désactivées',
+        content: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                value ? 'Notifications activées' : 'Notifications désactivées',
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+            ),
+          ],
         ),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 3),
@@ -48,16 +72,109 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _navigateToProfile() {
-    Navigator.pushNamed(context, '/ProfilePage'); // Corrected route name to match main.dart
+    Navigator.pushNamed(context, '/ProfilePage');
   }
 
   void _navigateToHelp() {
-    // TODO: Implémenter la navigation vers la page d'aide
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Page d\'aide en cours de développement'),
+        content: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(child: Text('Page d\'aide en cours de développement')),
+            Icon(Icons.close, color: Colors.white),
+          ],
+        ),
         backgroundColor: Colors.blue,
         duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationCard({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+    String? subtitle,
+  }) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: AppColors.primaryColor)),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    if (subtitle != null)
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -67,149 +184,212 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Paramètres',
-        showBackArrow: true,
-        backDestination: '/HomePage',
         showDarkModeButton: true,
       ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Updated CircleAvatar with currentUser from FirebaseAuth
-              Center(
-                child: CircleAvatar(
-                  radius: 60,
-                  backgroundColor: Colors.transparent, // Pas de fond externe
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
+              // Header avec avatar
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primaryColor.withOpacity(0.3),
+                                AppColors.primaryColor.withOpacity(0.1),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                        ),
+                        CircleAvatar(
+                          radius: 56,
+                          backgroundColor: Colors.transparent,
+                          backgroundImage: _currentUser?.photoURL != null
+                              ? NetworkImage(_currentUser!.photoURL!)
+                              : null,
+                          child: _currentUser?.photoURL == null
+                              ? Icon(Icons.person,
+                              size: 60, color: AppColors.primaryColor)
+                              : null,
                         ),
                       ],
                     ),
-                    child: CircleAvatar(
-                      radius: 58,
-                      backgroundColor: AppColors.primaryColor.withOpacity(0.1),
-                      backgroundImage: _currentUser?.photoURL != null
-                          ? NetworkImage(_currentUser!.photoURL!)
-                          : null,
-                      child: _currentUser?.photoURL == null
-                          ? Icon(Icons.person, size: 60, color: AppColors.primaryColor)
-                          : null,
+                    const SizedBox(height: 16),
+                    Text(
+                      _userName,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.titleLarge?.color,
+                      ),
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Section Mon Profil
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: Icon(Icons.person_outline, color: AppColors.primaryColor),
-                  title: const Text('Mon profil'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: _navigateToProfile,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Section Notifications
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: SwitchListTile(
-                  activeColor: AppColors.primaryColor,
-                  title: const Text('Notifications'),
-                  subtitle: const Text('Activer ou désactiver les notifications'),
-                  value: notificationsEnabled,
-                  onChanged: _toggleNotifications,
-                  secondary: Icon(Icons.notifications_outlined, color: AppColors.secondaryTextColor),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Section Mode Sombre
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Consumer<ThemeNotifier>(
-                  builder: (context, themeNotifier, child) {
-                    return SwitchListTile(
-                      activeColor: AppColors.primaryColor,
-                      title: const Text('Mode sombre'),
-                      subtitle: const Text('Activer ou désactiver le mode sombre'),
-                      value: themeNotifier.isDark,
-                      onChanged: (value) {
-                        themeNotifier.toggleTheme();
-                      },
-                      secondary: Icon(
-                        themeNotifier.isDark ? Icons.dark_mode : Icons.light_mode,
+                    const SizedBox(height: 4),
+                    Text(
+                      _currentUser?.email ?? '',
+                      style: TextStyle(
                         color: AppColors.secondaryTextColor,
+                        fontStyle: FontStyle.italic,
                       ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Section Aide
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: Icon(Icons.help_outline, color: AppColors.primaryColor),
-                  title: const Text('Aide'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: _navigateToHelp,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Bouton Déconnexion positioned closer to bottomNavigationBar
-              Center(
-                child: Container(
-                  width: MediaQuery.of(context).size.width * 0.7,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.all(
-                      Radius.circular(30), // Fully rounded for better integration
-                    ),
+              // Section Compte
+              _buildSectionCard(
+                title: 'Compte',
+                children: [
+                  _buildNavigationCard(
+                    icon: Icons.person_outline,
+                    title: 'Mon profil',
+                    subtitle: 'Modifier vos informations personnelles',
+                    onTap: _navigateToProfile,
                   ),
-                  child: TextButton(
-                    onPressed: () => confirmLogout(context),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      foregroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(
-                          Radius.circular(30),
-                        ),
+                ],
+              ),
+
+              // Section Préférences
+              _buildSectionCard(
+                title: 'Préférences',
+                children: [
+                  Consumer<ThemeNotifier>(
+                    builder: (context, themeNotifier, child) {
+                      return _buildNavigationCard(
+                        icon: themeNotifier.isDark
+                            ? Icons.dark_mode
+                            : Icons.light_mode,
+                        title: 'Apparence',
+                        subtitle: 'Changer le thème de l\'application',
+                        onTap: () => themeNotifier.toggleTheme(),
+                      );
+                    },
+                  ),
+                  Card(
+                    elevation: 2,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryColor.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.notifications_outlined,
+                                color: AppColors.primaryColor),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Notifications',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  'Activer/désactiver les notifications',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: _notificationsEnabled,
+                            onChanged: _toggleNotifications,
+                            activeColor: AppColors.primaryColor,
+                          ),
+                        ],
                       ),
                     ),
-                    child: const Text('Déconnexion'),
+                  ),
+                ],
+              ),
+
+              // Section Support
+              _buildSectionCard(
+                title: 'Support',
+                children: [
+                  _buildNavigationCard(
+                    icon: Icons.help_outline,
+                    title: 'Aide & Support',
+                    subtitle: 'FAQ et contact du support',
+                    onTap: _navigateToHelp,
+                  ),
+                  _buildNavigationCard(
+                    icon: Icons.info_outline,
+                    title: 'À propos',
+                    subtitle: 'Version et informations légales',
+                    onTap: () {
+                      // Naviguer vers la page À propos
+                    },
+                  ),
+                ],
+              ),
+
+              // Bouton de déconnexion
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => confirmLogout(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.logout, size: 20),
+                      SizedBox(width: 8),
+                      Text('Déconnexion'),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16), // Space to avoid overlap with bottomNavigationBar
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -217,7 +397,7 @@ class _SettingsPageState extends State<SettingsPage> {
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 2,
         onTabSelected: (index) {
-          // Pas de navigation ici, gérée par CustomBottomNavBar
+          // Navigation gérée ailleurs
         },
       ),
     );

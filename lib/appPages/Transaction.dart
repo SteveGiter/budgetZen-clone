@@ -30,8 +30,7 @@ class _TransactionState extends State<Transaction> {
     return Scaffold(
       appBar: CustomAppBar(
         title: _pageTitles[_currentIndex],
-        showBackArrow: true,
-        backDestination: '/LoginPage',
+        showBackArrow: false,
         showDarkModeButton: true,
         actions: [
           Row(

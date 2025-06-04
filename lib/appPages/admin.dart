@@ -16,7 +16,6 @@ class _AdminWelcomePageState extends State<AdminWelcomePage> {
       appBar: CustomAppBar(
         title: 'Administrateur',
         showBackArrow: true,
-        backDestination: '/LoginPage',
         showDarkModeButton: true,
         onDarkModePressed: () {
           // Implémentez votre logique de dark mode ici

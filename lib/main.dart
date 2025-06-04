@@ -172,7 +172,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             '/AdminPage': (context) => const AdminWelcomePage(),
             '/TransactionPage': (context) => const Transaction(),
             '/SettingsPage': (context) => const SettingsPage(),
-            '/ProfilePage': (context) => const Profile(),
+            '/ProfilePage': (context) => const ProfilePage(),
           },
 
           // Routes personnalisées (fallback)
