@@ -184,36 +184,82 @@ class FirestoreService {
 
   // -------------------- STATISTIQUES EN TEMPS RÉEL --------------------
   Future<void> createOrUpdateStatistiques(String utilisateurId) async {
-    // Annuler toute souscription existante
+    // Annuler toute souscription existante pour éviter les doublons
     cancelStatisticsSubscription(utilisateurId);
 
-    // Utiliser les streams pour obtenir les totaux en temps réel
-    final depensesStream = streamTotalDepenses(utilisateurId);
-    final revenusStream = streamTotalRevenus(utilisateurId);
-    final epargnesStream = streamTotalEpargnes(utilisateurId);
+    // Vérifier si le document statistique existe
+    final statistiquesRef = _firestore.collection('statistiques').doc(utilisateurId);
+    final docSnapshot = await statistiquesRef.get();
 
-    // Combiner les 3 streams
-    final combinedStream = Rx.combineLatest3(
-        depensesStream,
-        revenusStream,
-        epargnesStream,
-            (double depenses, double revenus, double epargnes) => {
-          'depenses': depenses,
-          'revenus': revenus,
-          'epargnes': epargnes,
-        });
-
-    // S'abonner au stream combiné
-    _activeSubscriptions[utilisateurId] = combinedStream.listen((data) async {
-      final statistiquesRef = _firestore.collection('statistiques').doc(utilisateurId);
-
+    if (!docSnapshot.exists) {
+      // Créer le document si inexistant
       await statistiquesRef.set({
-        'depensesTotales': data['depenses'],
-        'revenusTotaux': data['revenus'],
-        'epargnesTotales': data['epargnes'],
-        'soldeActuel': (data['revenus'] as num) - (data['depenses'] as num) - (data['epargnes'] as num),
+        'utilisateurId': utilisateurId,
+        'mois': '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}',
+        'depensesTotales': 0,
+        'revenusTotaux': 0,
+        'epargnesTotales': 0,
+        'soldeActuel': 0,
         'derniereMiseAJour': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      });
+    }
+
+    // Vérifier si une souscription est déjà en cours
+    if (_activeSubscriptions.containsKey(utilisateurId)) {
+      return; // Ne pas créer une nouvelle souscription
+    }
+
+    // Récupérer les flux de données en temps réel
+    final depensesStream = streamTotalDepenses(utilisateurId).distinct();
+    final revenusStream = streamTotalRevenus(utilisateurId).distinct();
+    final epargnesStream = streamTotalEpargnes(utilisateurId).distinct();
+
+    // Combiner les flux pour suivre tout changement
+    final combinedStream = Rx.combineLatest3<double, double, double, Map<String, double>>(
+      depensesStream,
+      revenusStream,
+      epargnesStream,
+          (depenses, revenus, epargnes) => {
+        'depenses': depenses,
+        'revenus': revenus,
+        'epargnes': epargnes,
+      },
+    ).distinct();
+
+    // Enregistrer l'abonnement actif
+    _activeSubscriptions[utilisateurId] = combinedStream.throttleTime(
+      const Duration(seconds: 1),
+      trailing: true,
+    ).listen((data) async {
+      final now = DateTime.now();
+      final mois = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+      final docId = utilisateurId; // Use userId as docId to avoid duplicates
+
+      final statistiquesRef = _firestore.collection('statistiques').doc(docId);
+
+      try {
+        // Calculer les nouvelles valeurs
+        final newDepenses = data['depenses'] ?? 0;
+        final newRevenus = data['revenus'] ?? 0;
+        final newEpargnes = data['epargnes'] ?? 0;
+        final newSolde = newRevenus - newDepenses - newEpargnes;
+
+        // Mettre à jour le document
+        await statistiquesRef.set({
+          'utilisateurId': utilisateurId,
+          'mois': mois,
+          'depensesTotales': newDepenses,
+          'revenusTotaux': newRevenus,
+          'epargnesTotales': newEpargnes,
+          'soldeActuel': newSolde,
+          'derniereMiseAJour': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        print('Erreur lors de la mise à jour des statistiques: $e');
+        // Relancer la souscription en cas d'erreur
+        cancelStatisticsSubscription(utilisateurId);
+        createOrUpdateStatistiques(utilisateurId);
+      }
     });
   }
 

@@ -17,6 +17,17 @@ class _CircularChartState extends State<CircularChart> {
   final FirestoreService _firestoreService = FirestoreService();
   int touchedIndex = -1;
 
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_initialized) {
+      _initialized = true;
+      _firestoreService.createOrUpdateStatistiques(widget.userId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
