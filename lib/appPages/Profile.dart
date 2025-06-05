@@ -5,9 +5,7 @@ import 'package:flutter/material.dart';
 import '../colors/app_colors.dart';
 import '../services/firebase/auth.dart';
 import '../services/firebase/firestore.dart';
-import '../utils/logout_utils.dart';
 import '../widgets/custom_app_bar.dart';
-import '../widgets/custom_bottom_nav_bar.dart';
 
 /// Page de gestion du profil utilisateur.
 class ProfilePage extends StatefulWidget {

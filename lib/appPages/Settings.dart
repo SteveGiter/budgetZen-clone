@@ -75,6 +75,14 @@ class _SettingsPageState extends State<SettingsPage> {
     Navigator.pushNamed(context, '/ProfilePage');
   }
 
+  void _navigateToSavingsManagement() {
+    Navigator.pushNamed(context, '/HistoriqueObjectifsEpargneWithBackArrow');
+  }
+
+  void _navigateToAddSavings() {
+    Navigator.pushNamed(context, '/SavingsGoalsPage');
+  }
+
   void _navigateToHelp() {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -91,7 +99,6 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
-
 
   Widget _buildSectionCard({
     required String title,
@@ -180,8 +187,7 @@ class _SettingsPageState extends State<SettingsPage> {
           Divider(
             height: 1,
             thickness: 1,
-            color: Theme.of(context).dividerColor
-            ,
+            color: Theme.of(context).dividerColor,
           ),
       ],
     );
@@ -278,6 +284,18 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: 'Mon profil',
                     subtitle: 'Modifier vos informations personnelles',
                     onTap: _navigateToProfile,
+                  ),
+                  _buildSettingItem(
+                    icon: Icons.savings_outlined,
+                    title: 'Voir les épargnes',
+                    subtitle: 'Consulter vos épargnes',
+                    onTap: _navigateToSavingsManagement,
+                  ),
+                  _buildSettingItem(
+                    icon: Icons.add_circle_outline,
+                    title: 'Définir un objectif d\'épargne',
+                    subtitle: 'Créer un nouvel objectif d\'épargne',
+                    onTap: _navigateToAddSavings,
                     showDivider: false,
                   ),
                 ],
@@ -370,9 +388,12 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 2,
+        currentIndex: 3,
         onTabSelected: (index) {
-          // Navigation gérée ailleurs
+          if (index != 3) {
+            final routes = ['/HomePage', '/TransactionPage', '/HistoriqueObjectifsEpargneWithoutBackArrow', '/SettingsPage'];
+            Navigator.pushReplacementNamed(context, routes[index]);
+          }
         },
       ),
     );

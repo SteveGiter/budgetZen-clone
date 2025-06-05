@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:budget_zen/appPages/Initial.dart';
 import 'package:budget_zen/appPages/Settings.dart';
 import 'package:budget_zen/appPages/SignUp.dart';
-import 'package:budget_zen/services/firebase/messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -10,11 +9,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'appPages/About.dart';
+import 'appPages/Historique des objectifsEpargnes/HistoriqueObjectifsEpargneWithBackArrow.dart';
 import 'appPages/Home.dart';
 import 'appPages/Login.dart';
 import 'appPages/Profile.dart';
 import 'appPages/Redirection.dart';
 import 'appPages/Reset_password.dart';
+import 'appPages/SavingsGoalsPage.dart';
 import 'appPages/Transaction.dart';
 import 'appPages/Welcome.dart';
 import 'appPages/admin.dart';
@@ -175,6 +176,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             '/SettingsPage': (context) => const SettingsPage(),
             '/ProfilePage': (context) => const ProfilePage(),
             '/AboutPage': (context) => AboutPage(),
+            '/SavingsGoalsPage': (context) => SavingsGoalsPage(),
+            '/HistoriqueObjectifsEpargneWithBackArrow': (context) => const HistoriqueObjectifsEpargneWithBackArrow(),
+            '/HistoriqueObjectifsEpargneWithoutBackArrow': (context) => const HistoriqueObjectifsEpargneWithoutBackArrow(),
           },
 
           // Routes personnalisées (fallback)

@@ -13,7 +13,10 @@ class FirestoreService {
   // -------------------- UTILISATEURS --------------------
 
   Future<bool> userExists(String uid) async {
-    final docSnapshot = await _firestore.collection('utilisateurs').doc(uid).get();
+    final docSnapshot = await _firestore
+        .collection('utilisateurs')
+        .doc(uid)
+        .get();
     return docSnapshot.exists;
   }
 
@@ -59,13 +62,15 @@ class FirestoreService {
       await budgetDoc.set({
         'budgetInitial': 0,
         'budgetActuel': 0,
-        'devise': 'EUR',
+        'devise': 'FCFA', // Changed to FCFA to match app usage
         'categoriePrincipale': 'Général',
         'dateCreation': FieldValue.serverTimestamp(),
       });
 
       // Ajout d'une entrée dans l'historique de connexion
-      final historiqueDoc = _firestore.collection('historique_connexions').doc();
+      final historiqueDoc = _firestore
+          .collection('historique_connexions')
+          .doc();
       await historiqueDoc.set({
         'uid': uid,
         'email': email,
@@ -168,14 +173,20 @@ class FirestoreService {
     await _firestore.collection('transactions').doc(id).update(data);
   }
 
-  Future<void> softDeleteTransaction(String transactionId, String userId) async {
-    final doc = await _firestore.collection('transactions').doc(transactionId).get();
+  Future<void> softDeleteTransaction(String transactionId,
+      String userId) async {
+    final doc = await _firestore
+        .collection('transactions')
+        .doc(transactionId)
+        .get();
     final data = doc.data();
 
     if (data == null) return;
 
     final isExpediteur = data['expediteurId'] == userId;
-    final fieldToUpdate = isExpediteur ? 'expediteurDeleted' : 'destinataireDeleted';
+    final fieldToUpdate = isExpediteur
+        ? 'expediteurDeleted'
+        : 'destinataireDeleted';
 
     await _firestore.collection('transactions').doc(transactionId).update({
       fieldToUpdate: userId,
@@ -188,14 +199,21 @@ class FirestoreService {
     cancelStatisticsSubscription(utilisateurId);
 
     // Vérifier si le document statistique existe
-    final statistiquesRef = _firestore.collection('statistiques').doc(utilisateurId);
+    final statistiquesRef = _firestore.collection('statistiques').doc(
+        utilisateurId);
     final docSnapshot = await statistiquesRef.get();
 
     if (!docSnapshot.exists) {
       // Créer le document si inexistant
       await statistiquesRef.set({
         'utilisateurId': utilisateurId,
-        'mois': '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}',
+        'mois': '${DateTime
+            .now()
+            .year}-${DateTime
+            .now()
+            .month
+            .toString()
+            .padLeft(2, '0')}',
         'depensesTotales': 0,
         'revenusTotaux': 0,
         'epargnesTotales': 0,
@@ -215,11 +233,15 @@ class FirestoreService {
     final epargnesStream = streamTotalEpargnes(utilisateurId).distinct();
 
     // Combiner les flux pour suivre tout changement
-    final combinedStream = Rx.combineLatest3<double, double, double, Map<String, double>>(
+    final combinedStream = Rx.combineLatest3<double,
+        double,
+        double,
+        Map<String, double>>(
       depensesStream,
       revenusStream,
       epargnesStream,
-          (depenses, revenus, epargnes) => {
+          (depenses, revenus, epargnes) =>
+      {
         'depenses': depenses,
         'revenus': revenus,
         'epargnes': epargnes,
@@ -304,30 +326,67 @@ class FirestoreService {
 
   // -------------------- OBJECTIFS ÉPARGNE --------------------
   Future<void> createObjectifEpargne({
+    required String userId,
     required String nomObjectif,
     required double montantCible,
-    required double montantActuel,
     required Timestamp dateLimite,
+    String? categorie,
   }) async {
     final objectifData = {
+      'userId': userId,
       'nomObjectif': nomObjectif,
       'montantCible': montantCible,
-      'montantActuel': montantActuel,
       'dateLimite': dateLimite,
+      'categorie': categorie ?? 'Autre', // Default to 'Autre' if null
+      'dateCreation': FieldValue.serverTimestamp(),
     };
     await _firestore.collection('objectifsEpargne').add(objectifData);
   }
 
-  Future<QuerySnapshot> getObjectifsEpargne() async {
-    return await _firestore.collection('objectifsEpargne').get();
+  Future<QuerySnapshot> getObjectifsEpargne(String userId) async {
+    // Modified to filter by userId
+    return await _firestore
+        .collection('objectifsEpargne')
+        .where('userId', isEqualTo: userId)
+        .orderBy('dateCreation', descending: true)
+        .get();
   }
 
-  Future<void> updateObjectifEpargne(String id, Map<String, dynamic> data) async {
+  Future<QuerySnapshot> getObjectifsEpargneByCategorie(String userId,
+      String categorie) async {
+    return await _firestore
+        .collection('objectifsEpargne')
+        .where('userId', isEqualTo: userId)
+        .where('categorie', isEqualTo: categorie)
+        .orderBy('dateCreation', descending: true)
+        .get();
+  }
+
+  Future<void> updateObjectifEpargne(String id,
+      Map<String, dynamic> data) async {
     await _firestore.collection('objectifsEpargne').doc(id).update(data);
   }
 
   Future<void> deleteObjectifEpargne(String id) async {
     await _firestore.collection('objectifsEpargne').doc(id).delete();
+  }
+
+  Stream<QuerySnapshot> streamObjectifsEpargneByCategorie(String userId,
+      String categorie) {
+    return _firestore
+        .collection('objectifsEpargne')
+        .where('userId', isEqualTo: userId)
+        .where('categorie', isEqualTo: categorie)
+        .orderBy('dateCreation', descending: true)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> streamAllObjectifsEpargne(String userId) {
+    return _firestore
+        .collection('objectifsEpargne')
+        .where('userId', isEqualTo: userId)
+        .orderBy('dateCreation', descending: true)
+        .snapshots();
   }
 
   // -------------------- REVENUS --------------------
@@ -347,6 +406,7 @@ class FirestoreService {
       });
     } catch (e) {
       debugPrint("Erreur lors de l'ajout du revenu : $e");
+      rethrow; // Added rethrow to allow error handling in calling method
     }
   }
 
@@ -367,6 +427,7 @@ class FirestoreService {
       });
     } catch (e) {
       debugPrint("Erreur lors de l'ajout de la dépense : $e");
+      rethrow;
     }
   }
 
@@ -376,6 +437,7 @@ class FirestoreService {
     required double montant,
     required String categorie,
     String? description,
+    required String objectifId, // Added objectifId to match HomePage requirements
   }) async {
     try {
       await _firestore.collection('epargnes').add({
@@ -383,16 +445,19 @@ class FirestoreService {
         'montant': montant,
         'categorie': categorie,
         'description': description,
+        'objectifId': objectifId,
         'dateCreation': FieldValue.serverTimestamp(),
       });
     } catch (e) {
       debugPrint("Erreur lors de l'ajout de l'épargne : $e");
+      rethrow;
     }
   }
 
   // -------------------- MÉTHODES DE CALCUL --------------------
   Future<double> getTotalDepenses(String userId) async {
-    final query = _firestore.collection('depenses').where('userId', isEqualTo: userId);
+    final query = _firestore.collection('depenses').where(
+        'userId', isEqualTo: userId);
 
     final snapshot = await query.get();
     return snapshot.docs.fold<double>(0.0, (double sum, doc) {
@@ -406,14 +471,16 @@ class FirestoreService {
         .collection('depenses')
         .where('userId', isEqualTo: userId)
         .snapshots()
-        .map((snapshot) => snapshot.docs.fold(0.0, (sum, doc) {
-      final data = doc.data();
-      return sum + (data['montant'] as num).toDouble();
-    }));
+        .map((snapshot) =>
+        snapshot.docs.fold(0.0, (sum, doc) {
+          final data = doc.data();
+          return sum + (data['montant'] as num).toDouble();
+        }));
   }
 
   Future<double> getTotalRevenus(String userId) async {
-    final query = _firestore.collection('revenus').where('userId', isEqualTo: userId);
+    final query = _firestore.collection('revenus').where(
+        'userId', isEqualTo: userId);
 
     final snapshot = await query.get();
     return snapshot.docs.fold<double>(0.0, (double sum, doc) {
@@ -427,14 +494,16 @@ class FirestoreService {
         .collection('revenus')
         .where('userId', isEqualTo: userId)
         .snapshots()
-        .map((snapshot) => snapshot.docs.fold(0.0, (sum, doc) {
-      final data = doc.data();
-      return sum + (data['montant'] as num).toDouble();
-    }));
+        .map((snapshot) =>
+        snapshot.docs.fold(0.0, (sum, doc) {
+          final data = doc.data();
+          return sum + (data['montant'] as num).toDouble();
+        }));
   }
 
   Future<double> getTotalEpargnes(String userId) async {
-    final query = _firestore.collection('epargnes').where('userId', isEqualTo: userId);
+    final query = _firestore.collection('epargnes').where(
+        'userId', isEqualTo: userId);
 
     final snapshot = await query.get();
     return snapshot.docs.fold<double>(0.0, (double sum, doc) {
@@ -448,17 +517,20 @@ class FirestoreService {
         .collection('epargnes')
         .where('userId', isEqualTo: userId)
         .snapshots()
-        .map((snapshot) => snapshot.docs.fold(0.0, (sum, doc) {
-      final data = doc.data();
-      return sum + (data['montant'] as num).toDouble();
-    }));
+        .map((snapshot) =>
+        snapshot.docs.fold(0.0, (sum, doc) {
+          final data = doc.data();
+          return sum + (data['montant'] as num).toDouble();
+        }));
   }
 
   // -------------------- NOUVELLES MÉTHODES POUR FILTRE MENSUEL --------------------
   Stream<double> streamTotalDepensesByMonth(String userId, int month) {
     final now = DateTime.now();
-    final start = DateTime(now.year, month, 1);
-    final end = DateTime(now.year, month + 1, 1).subtract(const Duration(seconds: 1));
+    final start = Timestamp.fromDate(
+        DateTime(now.year, month, 1)); // Fixed to use Timestamp
+    final end = Timestamp.fromDate(
+        DateTime(now.year, month + 1, 1).subtract(const Duration(seconds: 1)));
 
     return _firestore
         .collection('depenses')
@@ -466,16 +538,19 @@ class FirestoreService {
         .where('dateCreation', isGreaterThanOrEqualTo: start)
         .where('dateCreation', isLessThanOrEqualTo: end)
         .snapshots()
-        .map((snapshot) => snapshot.docs.fold(0.0, (sum, doc) {
-      final data = doc.data();
-      return sum + (data['montant'] as num).toDouble();
-    }));
+        .map((snapshot) =>
+        snapshot.docs.fold(0.0, (sum, doc) {
+          final data = doc.data();
+          return sum + (data['montant'] as num).toDouble();
+        }));
   }
 
   Stream<double> streamTotalRevenusByMonth(String userId, int month) {
     final now = DateTime.now();
-    final start = DateTime(now.year, month, 1);
-    final end = DateTime(now.year, month + 1, 1).subtract(const Duration(seconds: 1));
+    final start = Timestamp.fromDate(
+        DateTime(now.year, month, 1)); // Fixed to use Timestamp
+    final end = Timestamp.fromDate(
+        DateTime(now.year, month + 1, 1).subtract(const Duration(seconds: 1)));
 
     return _firestore
         .collection('revenus')
@@ -483,16 +558,19 @@ class FirestoreService {
         .where('dateCreation', isGreaterThanOrEqualTo: start)
         .where('dateCreation', isLessThanOrEqualTo: end)
         .snapshots()
-        .map((snapshot) => snapshot.docs.fold(0.0, (sum, doc) {
-      final data = doc.data();
-      return sum + (data['montant'] as num).toDouble();
-    }));
+        .map((snapshot) =>
+        snapshot.docs.fold(0.0, (sum, doc) {
+          final data = doc.data();
+          return sum + (data['montant'] as num).toDouble();
+        }));
   }
 
   Stream<double> streamTotalEpargnesByMonth(String userId, int month) {
     final now = DateTime.now();
-    final start = DateTime(now.year, month, 1);
-    final end = DateTime(now.year, month + 1, 1).subtract(const Duration(seconds: 1));
+    final start = Timestamp.fromDate(
+        DateTime(now.year, month, 1)); // Fixed to use Timestamp
+    final end = Timestamp.fromDate(
+        DateTime(now.year, month + 1, 1).subtract(const Duration(seconds: 1)));
 
     return _firestore
         .collection('epargnes')
@@ -500,15 +578,18 @@ class FirestoreService {
         .where('dateCreation', isGreaterThanOrEqualTo: start)
         .where('dateCreation', isLessThanOrEqualTo: end)
         .snapshots()
-        .map((snapshot) => snapshot.docs.fold(0.0, (sum, doc) {
-      final data = doc.data();
-      return sum + (data['montant'] as num).toDouble();
-    }));
+        .map((snapshot) =>
+        snapshot.docs.fold(0.0, (sum, doc) {
+          final data = doc.data();
+          return sum + (data['montant'] as num).toDouble();
+        }));
   }
 
   // -------------------- UTILITAIRE --------------------
-  Future<bool> isPhoneNumberUnique(String phoneNumber, String? provider, String uid) async {
-    final query = _firestore.collection('utilisateurs').where('numeroTelephone', isEqualTo: phoneNumber);
+  Future<bool> isPhoneNumberUnique(String phoneNumber, String? provider,
+      String uid) async {
+    final query = _firestore.collection('utilisateurs').where(
+        'numeroTelephone', isEqualTo: phoneNumber);
 
     final snapshot = await query.get();
 
@@ -530,4 +611,20 @@ class FirestoreService {
     }
     _activeSubscriptions.clear();
   }
+
+//------------------------------------------------------------------
+
+// Dans FirestoreService
+  Stream<double> streamMontantActuelParObjectif(String objectifId) {
+    return _firestore
+        .collection('epargnes')
+        .where('objectifId', isEqualTo: objectifId)
+        .snapshots()
+        .map((snapshot) =>
+        snapshot.docs.fold(0.0, (sum, doc) {
+          final data = doc.data();
+          return sum + (data['montant'] as num).toDouble();
+        }));
+  }
+
 }

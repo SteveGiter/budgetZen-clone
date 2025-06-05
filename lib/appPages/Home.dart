@@ -347,7 +347,6 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
 
-      // Modifier la partie floatingActionButton dans le build
       floatingActionButton: Stack(
         children: [
           Positioned(
@@ -425,10 +424,8 @@ class _HomePageState extends State<HomePage> {
         currentIndex: 0,
         onTabSelected: (index) {
           if (index != 0) {
-            Navigator.pushReplacementNamed(
-              context,
-              index == 1 ? '/TransactionPage' : '/SettingsPage',
-            );
+            final routes = ['/HomePage', '/TransactionPage', '/HistoriqueObjectifsEpargneWithoutBackArrow', '/SettingsPage'];
+            Navigator.pushReplacementNamed(context, routes[index]);
           }
         },
       ),
@@ -608,106 +605,193 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _showAddSavingsDialog(BuildContext context) async {
-    final amountController = TextEditingController();
-    final descriptionController = TextEditingController();
-    String selectedCategory = epargneCategories[0]['value']!;
-    final formKey = GlobalKey<FormState>();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Utilisateur non connecté.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Ajouter une épargne'),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: amountController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Montant (FCFA)',
-                    prefixIcon: Icon(Icons.attach_money),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer un montant';
-                    }
-                    if (double.tryParse(value) == null) {
-                      return 'Montant invalide';
-                    }
-                    return null;
-                  },
+    try {
+      // Vérifier si l'utilisateur a des objectifs d'épargne
+      final goalsSnapshot = await _firestoreService.getObjectifsEpargne(user.uid);
+      if (goalsSnapshot.docs.isEmpty) {
+        return _showNoSavingsGoalDialog(context);
+      }
+
+      // Récupérer tous les objectifs d'épargne pour la liste déroulante
+      List<Map<String, dynamic>> savingsGoals = goalsSnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return {
+          'id': doc.id,
+          'nomObjectif': data['nomObjectif'] as String,
+          'categorie': data['categorie'] as String?,
+        };
+      }).toList();
+
+      final amountController = TextEditingController();
+      final descriptionController = TextEditingController();
+      String selectedGoalId = savingsGoals[0]['id']!;
+      String? selectedGoalCategory = savingsGoals[0]['categorie'];
+      final formKey = GlobalKey<FormState>();
+
+      await showDialog(
+        context: context,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: const Text('Ajouter une épargne'),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Montant (FCFA)',
+                        prefixIcon: Icon(Icons.attach_money),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un montant';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Montant invalide';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: selectedGoalId,
+                      items: savingsGoals.map((Map<String, dynamic> goal) {
+                        return DropdownMenuItem<String>(
+                          value: goal['id'],
+                          child: Text(goal['nomObjectif']!),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            selectedGoalId = newValue;
+                            selectedGoalCategory = savingsGoals
+                                .firstWhere((goal) => goal['id'] == newValue)['categorie'];
+                          });
+                        }
+                      },
+                      decoration: const InputDecoration(
+                        labelText: 'Objectif d\'épargne',
+                        prefixIcon: Icon(Icons.flag),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Description (optionnelle)',
+                        prefixIcon: Icon(Icons.description),
+                      ),
+                      maxLines: 2,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
-                  items: epargneCategories.map((Map<String, String> category) {
-                    return DropdownMenuItem<String>(
-                      value: category['value'],
-                      child: Text(category['label']!),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      selectedCategory = newValue;
-                    }
-                  },
-                  decoration: const InputDecoration(
-                    labelText: 'Catégorie',
-                    prefixIcon: Icon(Icons.category),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (optionnelle)',
-                    prefixIcon: Icon(Icons.description),
-                  ),
-                  maxLines: 2,
-                ),
-              ],
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Annuler'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/SavingsGoalsPage');
+                },
+                child: const Text(
+                  'Créer un nouvel objectif',
+                  style: TextStyle(color: Colors.blue),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (formKey.currentState!.validate()) {
+                    final amount = double.parse(amountController.text);
+                    final description =
+                    descriptionController.text.isNotEmpty ? descriptionController.text : null;
+                    if (selectedGoalCategory == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('L\'objectif sélectionné n\'a pas de catégorie définie.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+                    await _addSavings(amount, selectedGoalCategory!, description, selectedGoalId);
+                    Navigator.pop(context);
+                  }
+                },
+                child: const Text('Ajouter'),
+              ),
+            ],
           ),
         ),
+      );
+
+      amountController.dispose();
+      descriptionController.dispose();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors du chargement des objectifs: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showNoSavingsGoalDialog(BuildContext context) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Aucun objectif d\'épargne défini'),
+        content: const Text(
+            'Vous devez d\'abord définir un objectif d\'épargne avant de pouvoir ajouter des épargnes.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler'),
           ),
           ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final amount = double.parse(amountController.text);
-                final description = descriptionController.text;
-                await _addSavings(amount, selectedCategory, description);
-                Navigator.pop(context);
-              }
+            onPressed: () {
+              Navigator.pop(context); // Fermer cette boîte de dialogue
+              // Naviguer vers la page de création d'objectifs d'épargne
+              Navigator.pushNamed(context, '/SavingsGoalsPage'); // Assurez-vous que cette route existe
             },
-            child: const Text('Ajouter'),
+            child: const Text('Définir un objectif'),
           ),
         ],
       ),
     );
   }
 
-// Dans la méthode _addIncome (remplacer toute la méthode existante)
   Future<void> _addIncome(double amount, String category, String description) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
-      await _firestoreService.firestore
-          .collection('revenus')
-          .add({
-        'userId': user.uid,
-        'montant': amount,
-        'categorie': category,
-        'description': description.isNotEmpty ? description : null,
-        'dateCreation': FieldValue.serverTimestamp(),
-      });
+      await _firestoreService.addRevenu(
+        userId: user.uid,
+        montant: amount,
+        categorie: category,
+        description: description.isNotEmpty ? description : null,
+      );
 
       await _firestoreService.firestore
           .collection('budgets')
@@ -743,7 +827,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text('Erreur: ${e.toString()}'),
+                child: Text('Erreur lors de l\'ajout du revenu: ${e.toString()}'),
               ),
               IconButton(
                 icon: Icon(Icons.close, color: Colors.white),
@@ -760,15 +844,13 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-// Dans la méthode _addExpense (remplacer toute la méthode existante)
   Future<void> _addExpense(double amount, String category, String description) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
       // Vérifier que le budget ne deviendra pas négatif
-      final firestoreService = FirestoreService();
-      final budgetDoc = await firestoreService.firestore.collection('budgets').doc(user.uid).get();
+      final budgetDoc = await _firestoreService.firestore.collection('budgets').doc(user.uid).get();
       final currentBudget = (budgetDoc.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
 
       if ((currentBudget - amount) < 0) {
@@ -792,15 +874,12 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
-      await _firestoreService.firestore
-          .collection('depenses')
-          .add({
-        'userId': user.uid,
-        'montant': amount,
-        'categorie': category,
-        'description': description.isNotEmpty ? description : null,
-        'dateCreation': FieldValue.serverTimestamp(),
-      });
+      await _firestoreService.addDepense(
+        userId: user.uid,
+        montant: amount,
+        categorie: category,
+        description: description.isNotEmpty ? description : null,
+      );
 
       await _firestoreService.firestore
           .collection('budgets')
@@ -836,7 +915,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text('Erreur: ${e.toString()}'),
+                child: Text('Erreur lors de l\'ajout de la dépense: ${e.toString()}'),
               ),
               IconButton(
                 icon: Icon(Icons.close, color: Colors.white),
@@ -853,15 +932,21 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-// Dans la méthode _addSavings (remplacer toute la méthode existante)
-  Future<void> _addSavings(double amount, String category, String description) async {
+  Future<void> _addSavings(double amount, String category, String? description, String goalId) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Utilisateur non connecté.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     try {
       // Vérifier que le budget ne deviendra pas négatif
-      final firestoreService = FirestoreService();
-      final budgetDoc = await firestoreService.firestore.collection('budgets').doc(user.uid).get();
+      final budgetDoc = await _firestoreService.firestore.collection('budgets').doc(user.uid).get();
       final currentBudget = (budgetDoc.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
 
       if ((currentBudget - amount) < 0) {
@@ -873,9 +958,7 @@ class _HomePageState extends State<HomePage> {
                 Expanded(child: Text('Opération impossible: budget insuffisant')),
                 IconButton(
                   icon: Icon(Icons.close, color: Colors.white),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  },
+                  onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
                 ),
               ],
             ),
@@ -885,22 +968,27 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
-      await _firestoreService.firestore
-          .collection('epargnes')
-          .add({
-        'userId': user.uid,
-        'montant': amount,
-        'categorie': category,
-        'description': description.isNotEmpty ? description : null,
-        'dateCreation': FieldValue.serverTimestamp(),
-      });
+      // Exécuter l'ajout de l'épargne dans une transaction pour la cohérence
+      await _firestoreService.firestore.runTransaction((transaction) async {
+        final budgetRef = _firestoreService.firestore.collection('budgets').doc(user.uid);
+        final budgetSnap = await transaction.get(budgetRef);
+        final currentBudget = (budgetSnap.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
 
-      // Mettre à jour le budget
-      await _firestoreService.firestore
-          .collection('budgets')
-          .doc(user.uid)
-          .update({
-        'budgetActuel': FieldValue.increment(-amount),
+        if (currentBudget < amount) {
+          throw Exception('Budget insuffisant pour cette épargne.');
+        }
+
+        await _firestoreService.addEpargne(
+          userId: user.uid,
+          montant: amount,
+          categorie: category,
+          description: description,
+          objectifId: goalId,
+        );
+
+        transaction.update(budgetRef, {
+          'budgetActuel': FieldValue.increment(-amount),
+        });
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -908,14 +996,10 @@ class _HomePageState extends State<HomePage> {
           content: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text('Épargne de ${amount.toStringAsFixed(2)} FCFA ajoutée'),
-              ),
+              Expanded(child: Text('Épargne de ${amount.toStringAsFixed(2)} FCFA ajoutée')),
               IconButton(
                 icon: Icon(Icons.close, color: Colors.white),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                },
+                onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
               ),
             ],
           ),
@@ -929,19 +1013,15 @@ class _HomePageState extends State<HomePage> {
           content: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text('Erreur: ${e.toString()}'),
-              ),
+              Expanded(child: Text('Erreur lors de l\'ajout de l\'épargne: ${e.toString()}')),
               IconButton(
                 icon: Icon(Icons.close, color: Colors.white),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                },
+                onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
               ),
             ],
           ),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 5),
         ),
       );
     }

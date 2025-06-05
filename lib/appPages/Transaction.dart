@@ -83,7 +83,10 @@ class _TransactionState extends State<Transaction> {
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 1,
         onTabSelected: (index) {
-          // Pas de navigation ici, gérée par CustomBottomNavBar
+          if (index != 1) {
+            final routes = ['/HomePage', '/TransactionPage', '/HistoriqueObjectifsEpargneWithoutBackArrow', '/SettingsPage'];
+            Navigator.pushReplacementNamed(context, routes[index]);
+          }
         },
       ),
     );
