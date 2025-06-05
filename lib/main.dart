@@ -10,6 +10,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'appPages/About.dart';
 import 'appPages/Historique des objectifsEpargnes/HistoriqueObjectifsEpargneWithBackArrow.dart';
+import 'appPages/Historique des objectifsEpargnes/HistoriqueObjectifsEpargneWithoutBackArrow.dart';
 import 'appPages/Home.dart';
 import 'appPages/Login.dart';
 import 'appPages/Profile.dart';

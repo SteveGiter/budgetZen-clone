@@ -8,11 +8,11 @@ import 'custom_app_bar.dart';
 import 'custom_bottom_nav_bar.dart';
 
 class HistoriqueObjectifsEpargne extends StatefulWidget {
-  final bool showBackArrow; // Nouveau paramètre
+  final bool showBackArrow;
 
   const HistoriqueObjectifsEpargne({
     super.key,
-    this.showBackArrow = true, // Valeur par défaut : true
+    this.showBackArrow = true,
   });
 
   @override
@@ -23,7 +23,8 @@ class _HistoriqueObjectifsEpargneState extends State<HistoriqueObjectifsEpargne>
   final FirestoreService _firestoreService = FirestoreService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DateFormat dateFormat = DateFormat('EEEE dd MMMM yyyy \'à\' HH:mm:ss', 'fr_FR');
-  String _selectedFilter = 'Tout'; // Filtre pour les objectifs (ex. : "Tout", "En cours", "Terminé")
+  String _selectedFilter = 'Tout';
+  final Map<String, bool> _notificationShown = {};
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +38,7 @@ class _HistoriqueObjectifsEpargneState extends State<HistoriqueObjectifsEpargne>
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Objectifs d\'Épargne',
-        showBackArrow: widget.showBackArrow, // Utilisez widget.showBackArrow ici
+        showBackArrow: widget.showBackArrow,
         showDarkModeButton: true,
       ),
       backgroundColor: Theme.of(context).brightness == Brightness.dark
@@ -185,7 +186,7 @@ class _HistoriqueObjectifsEpargneState extends State<HistoriqueObjectifsEpargne>
             final currentDoc = filteredObjectifs[index];
             final currentData = currentDoc.data() as Map<String, dynamic>;
             final currentDate = (currentData['dateCreation'] as Timestamp).toDate();
-            final objectifId = currentDoc.id; // ID de l'objectif pour lier les épargnes
+            final objectifId = currentDoc.id;
 
             bool showMonthHeader = false;
             if (index == 0) {
@@ -242,137 +243,159 @@ class _HistoriqueObjectifsEpargneState extends State<HistoriqueObjectifsEpargne>
     final data = doc.data() as Map<String, dynamic>;
     final nomObjectif = data['nomObjectif'] as String;
     final montantCible = (data['montantCible'] as num).toDouble();
+    final montantActuel = (data['montantActuel'] as num?)?.toDouble() ?? 0.0;
     final categorie = (data['categorie'] as String?) ?? 'Non défini';
     final dateCreation = (data['dateCreation'] as Timestamp).toDate();
     final dateLimite = (data['dateLimite'] as Timestamp).toDate();
+    final isCompleted = montantActuel >= montantCible;
 
     return StreamBuilder<double>(
-        stream: _firestoreService.streamMontantActuelParObjectif(objectifId),
-        initialData: 0.0,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      stream: _firestoreService.streamMontantActuelParObjectif(objectifId),
+      initialData: montantActuel,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          if (snapshot.hasError) {
-            return Text('Erreur: ${snapshot.error}', style: TextStyle(color: AppColors.errorColor));
-          }
+        if (snapshot.hasError) {
+          return Text('Erreur: ${snapshot.error}', style: TextStyle(color: AppColors.errorColor));
+        }
 
-          final montantActuel = snapshot.data ?? 0.0;
-          final progress = (montantActuel / montantCible).clamp(0.0, 1.0);
+        final streamedMontantActuel = snapshot.data ?? montantActuel;
+        final progress = (streamedMontantActuel / montantCible).clamp(0.0, 1.0);
+        final isStreamedCompleted = streamedMontantActuel >= montantCible;
 
-          final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-          final cardColor = isDarkMode ? AppColors.darkCardColors[0].withOpacity(0.2) : AppColors.cardColors[0];
-          final textColor = isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor;
+        if (isStreamedCompleted && !_notificationShown.containsKey(objectifId)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Félicitations ! L'objectif '$nomObjectif' est atteint !"),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+            setState(() {
+              _notificationShown[objectifId] = true;
+            });
+          });
+        } else if (!isStreamedCompleted && _notificationShown.containsKey(objectifId)) {
+          setState(() {
+            _notificationShown.remove(objectifId);
+          });
+        }
 
-          return Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            color: cardColor,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'OBJECTIF D\'ÉPARGNE',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: textColor,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              nomObjectif.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '${NumberFormat.decimalPattern('fr').format(montantActuel)} / ${NumberFormat.decimalPattern('fr').format(montantCible)} FCFA',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete, color: AppColors.errorColor),
-                        onPressed: () {
-                          _showDeleteDialog(doc.id, context);
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: isDarkMode ? Colors.grey[700] : Colors.grey[300],
-                    color: textColor,
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        final cardColor = isDarkMode ? AppColors.darkCardColors[0].withOpacity(0.2) : AppColors.cardColors[0];
+        final textColor = isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor;
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          color: cardColor,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.category, size: 16),
-                          const SizedBox(width: 8),
                           Text(
-                            categorie,
-                            style: const TextStyle(fontSize: 13),
+                            'OBJECTIF D\'ÉPARGNE',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            nomObjectif.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
-                      Text(
-                        '${(progress * 100).toStringAsFixed(0)}%',
-                        style: const TextStyle(fontSize: 13),
+                    ),
+                    Text(
+                      '${NumberFormat.decimalPattern('fr').format(streamedMontantActuel)} / ${NumberFormat.decimalPattern('fr').format(montantCible)} FCFA',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_today, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Créé le ${dateFormat.format(dateCreation)}',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.event, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Échéance: ${dateFormat.format(dateLimite)}',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete, color: AppColors.errorColor),
+                      onPressed: () {
+                        _showDeleteDialog(doc.id, context);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                  color: textColor,
+                  minHeight: 8,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.category, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          categorie,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '${(progress * 100).toStringAsFixed(0)}%',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Créé le ${dateFormat.format(dateCreation)}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.event, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Échéance: ${dateFormat.format(dateLimite)}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          );
-        });
+          ),
+        );
+      },
+    );
   }
 
   void _showDeleteDialog(String objectifId, BuildContext context) {
@@ -393,6 +416,9 @@ class _HistoriqueObjectifsEpargneState extends State<HistoriqueObjectifsEpargne>
                 Navigator.of(context).pop();
                 try {
                   await _firestoreService.deleteObjectifEpargne(objectifId);
+                  setState(() {
+                    _notificationShown.remove(objectifId);
+                  });
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Objectif d'épargne supprimé")),
                   );

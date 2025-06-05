@@ -608,13 +608,17 @@ class _HomePageState extends State<HomePage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Utilisateur non connecté.'),
+        const SnackBar(
+          content: Text('Vous devez être connecté pour ajouter une épargne'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
+
+    final amountController = TextEditingController();
+    final descriptionController = TextEditingController();
+    bool isSubmitting = false; // Variable pour gérer l'état de soumission
 
     try {
       // Vérifier si l'utilisateur a des objectifs d'épargne
@@ -623,7 +627,7 @@ class _HomePageState extends State<HomePage> {
         return _showNoSavingsGoalDialog(context);
       }
 
-      // Récupérer tous les objectifs d'épargne pour la liste déroulante
+      // Récupérer les objectifs d'épargne
       List<Map<String, dynamic>> savingsGoals = goalsSnapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return {
@@ -633,8 +637,6 @@ class _HomePageState extends State<HomePage> {
         };
       }).toList();
 
-      final amountController = TextEditingController();
-      final descriptionController = TextEditingController();
       String selectedGoalId = savingsGoals[0]['id']!;
       String? selectedGoalCategory = savingsGoals[0]['categorie'];
       final formKey = GlobalKey<FormState>();
@@ -642,114 +644,160 @@ class _HomePageState extends State<HomePage> {
       await showDialog(
         context: context,
         builder: (context) => StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
-            title: const Text('Ajouter une épargne'),
-            content: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextFormField(
-                      controller: amountController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Montant (FCFA)',
-                        prefixIcon: Icon(Icons.attach_money),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer un montant';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return 'Montant invalide';
-                        }
-                        return null;
-                      },
+          builder: (context, setState) {
+            return WillPopScope(
+              onWillPop: () async {
+                amountController.dispose();
+                descriptionController.dispose();
+                return true;
+              },
+              child: AlertDialog(
+                title: const Text('Ajouter une épargne'),
+                content: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: amountController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Montant (FCFA)',
+                            prefixIcon: Icon(Icons.attach_money),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez entrer un montant';
+                            }
+                            if (double.tryParse(value) == null) {
+                              return 'Montant invalide';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: selectedGoalId,
+                          items: savingsGoals.map((Map<String, dynamic> goal) {
+                            return DropdownMenuItem<String>(
+                              value: goal['id'],
+                              child: Text(goal['nomObjectif']!),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                selectedGoalId = newValue;
+                                selectedGoalCategory = savingsGoals
+                                    .firstWhere((goal) => goal['id'] == newValue)['categorie'];
+                              });
+                            }
+                          },
+                          decoration: const InputDecoration(
+                            labelText: 'Objectif d\'épargne',
+                            prefixIcon: Icon(Icons.flag),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Description (optionnelle)',
+                            prefixIcon: Icon(Icons.description),
+                          ),
+                          maxLines: 2,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: selectedGoalId,
-                      items: savingsGoals.map((Map<String, dynamic> goal) {
-                        return DropdownMenuItem<String>(
-                          value: goal['id'],
-                          child: Text(goal['nomObjectif']!),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        if (newValue != null) {
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      amountController.dispose();
+                      descriptionController.dispose();
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Annuler'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/SavingsGoalsPage');
+                    },
+                    child: const Text(
+                      'Créer un objectif',
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: isSubmitting
+                        ? null // Désactiver le bouton pendant le traitement
+                        : () async {
+                      if (formKey.currentState!.validate()) {
+                        setState(() {
+                          isSubmitting = true; // Indiquer que la soumission est en cours
+                        });
+
+                        final amount = double.parse(amountController.text);
+                        final description = descriptionController.text.isNotEmpty
+                            ? descriptionController.text
+                            : null;
+
+                        if (selectedGoalCategory == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('L\'objectif sélectionné n\'a pas de catégorie définie'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
                           setState(() {
-                            selectedGoalId = newValue;
-                            selectedGoalCategory = savingsGoals
-                                .firstWhere((goal) => goal['id'] == newValue)['categorie'];
+                            isSubmitting = false; // Réactiver le bouton
+                          });
+                          return;
+                        }
+
+                        try {
+                          await _addSavings(
+                            amount,
+                            selectedGoalCategory!,
+                            description,
+                            selectedGoalId,
+                          );
+                          amountController.dispose();
+                          descriptionController.dispose();
+                          Navigator.pop(context);
+                        } catch (e) {
+                          setState(() {
+                            isSubmitting = false; // Réactiver le bouton en cas d'erreur
                           });
                         }
-                      },
-                      decoration: const InputDecoration(
-                        labelText: 'Objectif d\'épargne',
-                        prefixIcon: Icon(Icons.flag),
+                      }
+                    },
+                    child: isSubmitting
+                        ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Description (optionnelle)',
-                        prefixIcon: Icon(Icons.description),
-                      ),
-                      maxLines: 2,
-                    ),
-                  ],
-                ),
+                    )
+                        : const Text('Ajouter'),
+                  ),
+                ],
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Annuler'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/SavingsGoalsPage');
-                },
-                child: const Text(
-                  'Créer un nouvel objectif',
-                  style: TextStyle(color: Colors.blue),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (formKey.currentState!.validate()) {
-                    final amount = double.parse(amountController.text);
-                    final description =
-                    descriptionController.text.isNotEmpty ? descriptionController.text : null;
-                    if (selectedGoalCategory == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('L\'objectif sélectionné n\'a pas de catégorie définie.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
-                    await _addSavings(amount, selectedGoalCategory!, description, selectedGoalId);
-                    Navigator.pop(context);
-                  }
-                },
-                child: const Text('Ajouter'),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       );
-
+    } catch (e) {
       amountController.dispose();
       descriptionController.dispose();
-    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur lors du chargement des objectifs: ${e.toString()}'),
+          content: Text('Erreur: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
@@ -945,49 +993,66 @@ class _HomePageState extends State<HomePage> {
     }
 
     try {
-      // Vérifier que le budget ne deviendra pas négatif
-      final budgetDoc = await _firestoreService.firestore.collection('budgets').doc(user.uid).get();
-      final currentBudget = (budgetDoc.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
+      // Vérifier les épargnes récentes pour éviter les duplications
+      final recentEpargnes = await _firestoreService.firestore
+          .collection('epargnes')
+          .where('userId', isEqualTo: user.uid)
+          .where('objectifId', isEqualTo: goalId)
+          .where('montant', isEqualTo: amount)
+          .where('categorie', isEqualTo: category)
+          .where('dateCreation',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime.now().subtract(Duration(seconds: 5))))
+          .get();
 
-      if ((currentBudget - amount) < 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(child: Text('Opération impossible: budget insuffisant')),
-                IconButton(
-                  icon: Icon(Icons.close, color: Colors.white),
-                  onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
+      if (recentEpargnes.docs.isNotEmpty) {
+        throw Exception('Une épargne similaire a été ajoutée récemment. Veuillez attendre quelques secondes.');
       }
 
-      // Exécuter l'ajout de l'épargne dans une transaction pour la cohérence
       await _firestoreService.firestore.runTransaction((transaction) async {
         final budgetRef = _firestoreService.firestore.collection('budgets').doc(user.uid);
+        final objectifRef = _firestoreService.firestore.collection('objectifsEpargne').doc(goalId);
+
+        // Récupérer le budget et l'objectif dans la transaction
         final budgetSnap = await transaction.get(budgetRef);
+        final objectifSnap = await transaction.get(objectifRef);
+
+        if (!budgetSnap.exists) {
+          throw Exception('Document budget introuvable.');
+        }
+        if (!objectifSnap.exists) {
+          throw Exception('Objectif d\'épargne introuvable.');
+        }
+
         final currentBudget = (budgetSnap.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
+        final currentMontantActuel = (objectifSnap.data()?['montantActuel'] as num?)?.toDouble() ?? 0.0;
+        final montantCible = (objectifSnap.data()?['montantCible'] as num?)?.toDouble() ?? 0.0;
 
         if (currentBudget < amount) {
           throw Exception('Budget insuffisant pour cette épargne.');
         }
 
-        await _firestoreService.addEpargne(
-          userId: user.uid,
-          montant: amount,
-          categorie: category,
-          description: description,
-          objectifId: goalId,
-        );
+        // Ajouter l'épargne
+        final epargneRef = _firestoreService.firestore.collection('epargnes').doc();
+        transaction.set(epargneRef, {
+          'userId': user.uid,
+          'montant': amount,
+          'categorie': category,
+          'description': description,
+          'objectifId': goalId,
+          'dateCreation': FieldValue.serverTimestamp(),
+        });
 
+        // Mettre à jour le budget
         transaction.update(budgetRef, {
           'budgetActuel': FieldValue.increment(-amount),
+        });
+
+        // Mettre à jour montantActuel et isCompleted dans l'objectif
+        final newMontantActuel = currentMontantActuel + amount;
+        transaction.update(objectifRef, {
+          'montantActuel': newMontantActuel,
+          'isCompleted': newMontantActuel >= montantCible,
+          'derniereMiseAJour': FieldValue.serverTimestamp(),
         });
       });
 

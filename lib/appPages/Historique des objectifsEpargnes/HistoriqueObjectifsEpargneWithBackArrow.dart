@@ -13,14 +13,3 @@ class HistoriqueObjectifsEpargneWithBackArrow extends StatelessWidget {
   }
 }
 
-// Deuxième classe avec showBackArrow = false
-class HistoriqueObjectifsEpargneWithoutBackArrow extends StatelessWidget {
-  const HistoriqueObjectifsEpargneWithoutBackArrow({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const HistoriqueObjectifsEpargne(
-      showBackArrow: false,
-    );
-  }
-}
