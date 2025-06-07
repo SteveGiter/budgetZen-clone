@@ -481,19 +481,23 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final goalsSnapshot = await _firestoreService.getObjectifsEpargne(user.uid);
-      bool allGoalsCompleted = false;
+      bool allGoalsUnusable = false;
 
       if (goalsSnapshot.docs.isNotEmpty) {
-        allGoalsCompleted = goalsSnapshot.docs.every((doc) {
+        allGoalsUnusable = goalsSnapshot.docs.every((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final montantActuel = (data['montantActuel'] as num?)?.toDouble() ?? 0.0;
           final montantCible = (data['montantCible'] as num?)?.toDouble() ?? 0.0;
           final isCompleted = (data['isCompleted'] as bool?) ?? false;
-          return isCompleted || montantActuel >= montantCible;
+          final dateLimite = data['dateLimite'] as Timestamp?;
+          final isExpired = dateLimite != null && dateLimite.toDate().isBefore(DateTime.now());
+
+          // Un objectif est inutilisable s'il est atteint ou expiré
+          return isCompleted || montantActuel >= montantCible || isExpired;
         });
       }
 
-      if (goalsSnapshot.docs.isEmpty || allGoalsCompleted) {
+      if (goalsSnapshot.docs.isEmpty || allGoalsUnusable) {
         await _showNoSavingsGoalDialog(context, goalsSnapshot.docs.isEmpty);
         return;
       }
@@ -526,7 +530,7 @@ class _HomePageState extends State<HomePage> {
         content: Text(
           noGoalsDefined
               ? 'Vous n\'avez pas encore défini d\'objectif d\'épargne. Veuillez en créer un pour ajouter des épargnes.'
-              : 'Tous vos objectifs d\'épargne sont déjà atteints. Veuillez créer un nouvel objectif pour continuer à épargner.',
+              : 'Tous vos objectifs d\'épargne sont soit atteints, soit expirés. Veuillez créer un nouvel objectif pour continuer.',
         ),
         actions: [
           TextButton(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/firebase/firestore.dart';
 
 class AddSavingsDialog extends StatefulWidget {
@@ -41,15 +42,41 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
     try {
       final goalsSnapshot = await widget.firestoreService.getObjectifsEpargne(widget.userId);
       if (mounted) {
+        final currentDate = DateTime.now(); // Date actuelle : 7 juin 2025
         setState(() {
-          _savingsGoals = goalsSnapshot.docs.map((doc) {
+          _savingsGoals = goalsSnapshot.docs
+              .map((doc) {
             final data = doc.data() as Map<String, dynamic>;
             return {
               'id': doc.id,
               'nomObjectif': data['nomObjectif'] as String,
               'categorie': data['categorie'] as String?,
+              'montantActuel': (data['montantActuel'] as num?)?.toDouble() ?? 0.0,
+              'montantCible': (data['montantCible'] as num?)?.toDouble() ?? 0.0,
+              'isCompleted': (data['isCompleted'] as bool?) ?? false,
+              'dateLimite': data['dateLimite'] as Timestamp?, // Récupérer la date limite
             };
-          }).toList();
+          })
+              .where((goal) {
+            // Vérifier si l'objectif est atteint
+            final isCompleted = goal['isCompleted'] as bool;
+            final montantActuel = goal['montantActuel'] as double;
+            final montantCible = goal['montantCible'] as double;
+            final isGoalReached = isCompleted || montantActuel >= montantCible;
+
+            // Vérifier si l'objectif est expiré
+            final dateLimite = goal['dateLimite'] as Timestamp?;
+            bool isExpired = false;
+            if (dateLimite != null) {
+              final goalDeadline = dateLimite.toDate();
+              isExpired = goalDeadline.isBefore(currentDate);
+            }
+
+            // Garder uniquement les objectifs non atteints et non expirés
+            return !isGoalReached && !isExpired;
+          })
+              .toList();
+
           if (_savingsGoals.isNotEmpty) {
             _selectedGoalId = _savingsGoals[0]['id'];
             _selectedGoalCategory = _savingsGoals[0]['categorie'];
@@ -185,6 +212,16 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Annuler'),
         ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            Navigator.pushNamed(context, '/SavingsGoalsPage');
+          },
+          child: const Text(
+            'Créer un nouvel objectif',
+            style: TextStyle(color: Colors.blue),
+          ),
+        ),
         if (_savingsGoals.isEmpty)
           TextButton(
             onPressed: () {
@@ -210,8 +247,7 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
                 if (_selectedGoalCategory == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text(
-                          'L\'objectif sélectionné n\'a pas de catégorie définie'),
+                      content: Text('L\'objectif sélectionné n\'a pas de catégorie définie'),
                       backgroundColor: Colors.red,
                     ),
                   );
