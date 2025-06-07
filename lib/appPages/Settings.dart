@@ -76,7 +76,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _navigateToSavingsManagement() {
-    Navigator.pushNamed(context, '/HistoriqueObjectifsEpargneWithBackArrow');
+    Navigator.pushNamed(context, '/historique-epargne');
   }
 
   void _navigateToAddSavings() {
@@ -391,7 +391,7 @@ class _SettingsPageState extends State<SettingsPage> {
         currentIndex: 3,
         onTabSelected: (index) {
           if (index != 3) {
-            final routes = ['/HomePage', '/TransactionPage', '/HistoriqueObjectifsEpargneWithoutBackArrow', '/SettingsPage'];
+            final routes = ['/HomePage', '/TransactionPage', '/historique-epargne-no-back', '/SettingsPage'];
             Navigator.pushReplacementNamed(context, routes[index]);
           }
         },

@@ -466,13 +466,8 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Future<void> _register() async {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-
+      setState(() => _isLoading = true);
       try {
         await Auth().createUserWithEmailAndPassword(
           _emailController.text.trim(),
@@ -482,158 +477,242 @@ class _SignUpPageState extends State<SignUpPage> {
           double.tryParse(_budgetController.text.trim()) ?? 0.0,
         );
 
-        if (!mounted) return;
-
-        await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(
-              'Inscription réussie !',
-              style: TextStyle(
-                color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            content: Text(
-              'Félicitations ! Votre compte a été créé avec l\'adresse : ${_emailController.text.trim()}\n\nVous pouvez maintenant continuer vers la page d\'accueil ou revenir à la page de connexion.',
-              style: TextStyle(
-                color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor,
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Ferme la boîte de dialogue
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const RedirectionPage()),
-                  );
-                },
-                child: Text(
-                  'Page d\'accueil',
-                  style: TextStyle(
-                    color: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor,
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Ferme la boîte de dialogue
-                  Navigator.pushReplacementNamed(context, '/LoginPage');
-                },
-                child: Text(
-                  'Connexion',
-                  style: TextStyle(
-                    color: isDarkMode ? AppColors.darkSecondaryColor : AppColors.secondaryColor,
-                  ),
-                ),
-              ),
-            ],
-            backgroundColor: isDarkMode ? AppColors.darkCardColor : AppColors.cardColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-          ),
-        );
+        if (mounted) {
+          _showSuccessDialog();
+        }
       } on FirebaseAuthException catch (e) {
-        String errorMessage;
-
-        switch (e.code) {
-          case 'invalid-email':
-            errorMessage = "Format d'email invalide. Utilisez une adresse valide (ex: utilisateur@exemple.com)";
-            break;
-          case 'email-already-in-use':
-            errorMessage = "Cet email est déjà utilisé. Connectez-vous ou utilisez l'option 'Mot de passe oublié'";
-            break;
-          case 'operation-not-allowed':
-            errorMessage = "Inscription désactivée. Contactez le support à support@budgetzen.com";
-            break;
-          case 'weak-password':
-            errorMessage = "Mot de passe trop faible (minimum 6 caractères). Ajoutez des chiffres et caractères spéciaux";
-            break;
-          case 'network-request-failed':
-            errorMessage = "Problème de connexion internet. Vérifiez votre réseau et réessayez";
-            break;
-          case 'too-many-requests':
-            errorMessage = "Trop de tentatives. Veuillez patienter quelques minutes";
-            break;
-          case 'invalid-credential':
-            errorMessage = "Identifiants invalides. Actualisez la page et réessayez";
-            break;
-          default:
-            errorMessage = "Erreur d'inscription (${e.code}). Veuillez réessayer";
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(child: Text(errorMessage)),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    },
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.errorColor,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 3),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        }
+        _handleFirebaseAuthError(e);
+      } on SocketException catch (_) {
+        _showErrorSnackbar(
+          'Pas de connexion internet',
+          'Activez votre WiFi ou données mobiles et réessayez.',
+          Icons.wifi_off,
+        );
+      } on TimeoutException catch (_) {
+        _showErrorSnackbar(
+          'Serveur indisponible',
+          'Le serveur met trop de temps à répondre. Réessayez plus tard.',
+          Icons.timer_off,
+        );
+      } on PlatformException catch (e) {
+        _showErrorSnackbar(
+          'Erreur système',
+          'Redémarrez l\'application (Code: ${e.code}).',
+          Icons.settings,
+        );
       } catch (e) {
-        String errorMessage = "Erreur technique";
-
-        if (e is SocketException) {
-          errorMessage = "Pas de connexion internet. Activez WiFi/mobile data";
-        } else if (e is TimeoutException) {
-          errorMessage = "Serveur indisponible. Réessayez plus tard";
-        } else if (e is FormatException) {
-          errorMessage = "Format de données invalide. Vérifiez vos informations";
-        } else if (e is PlatformException) {
-          errorMessage = "Erreur système (${e.code}). Redémarrez l'application";
-        } else {
-          errorMessage = "Erreur inattendue: ${e.toString().split(':').first}";
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(child: Text(errorMessage)),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    },
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.errorColor,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 3),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        }
+        _showErrorSnackbar(
+          'Erreur inattendue',
+          'Une erreur technique s\'est produite. Veuillez réessayer.',
+          Icons.error_outline,
+        );
       } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      await Auth().signInWithGoogle();
+      if (mounted) {
+        _showSuccessSnackbar('Inscription réussie avec Google !');
+        await Future.delayed(const Duration(seconds: 2));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const RedirectionPage()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code != 'cancelled') {
+        _handleFirebaseAuthError(e);
+      }
+    } catch (e) {
+      _showErrorSnackbar(
+        'Erreur inattendue',
+        'Une erreur s\'est produite lors de l\'inscription avec Google.',
+        Icons.error_outline,
+      );
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }
+
+  void _handleFirebaseAuthError(FirebaseAuthException e) {
+    final errorConfig = _getErrorConfig(e.code);
+    _showErrorSnackbar(errorConfig.message, errorConfig.solution, errorConfig.icon);
+  }
+
+  ErrorConfig _getErrorConfig(String errorCode) {
+    switch (errorCode) {
+    // Erreurs d'inscription
+      case 'invalid-email':
+        return ErrorConfig(
+          'Format d\'email incorrect',
+          'Veuillez entrer une adresse email valide (ex: utilisateur@exemple.com)',
+          Icons.email,
+        );
+      case 'email-already-in-use':
+        return ErrorConfig(
+          'Email déjà utilisé',
+          'Cet email est déjà associé à un compte. Connectez-vous ou utilisez "Mot de passe oublié".',
+          Icons.alternate_email,
+        );
+      case 'operation-not-allowed':
+        return ErrorConfig(
+          'Inscription désactivée',
+          'L\'inscription par email est temporairement désactivée. Contactez le support.',
+          Icons.block,
+        );
+      case 'weak-password':
+        return ErrorConfig(
+          'Mot de passe trop faible',
+          'Votre mot de passe doit contenir au moins 6 caractères. Ajoutez des chiffres et caractères spéciaux pour plus de sécurité.',
+          Icons.password,
+        );
+      case 'network-request-failed':
+        return ErrorConfig(
+          'Problème de connexion',
+          'Vérifiez votre connexion internet et réessayez.',
+          Icons.wifi_off,
+        );
+      case 'too-many-requests':
+        return ErrorConfig(
+          'Trop de tentatives',
+          'Veuillez patienter quelques minutes avant de réessayer.',
+          Icons.timer,
+        );
+    // Erreurs Google Sign-In
+      case 'account-exists-with-different-credential':
+        return ErrorConfig(
+          'Compte existant',
+          'Cet email est déjà associé à un autre compte. Connectez-vous avec la méthode originale.',
+          Icons.link_off,
+        );
+      case 'invalid-verification-code':
+        return ErrorConfig(
+          'Code de vérification invalide',
+          'Le code de vérification est incorrect ou a expiré.',
+          Icons.sms_failed,
+        );
+      default:
+        return ErrorConfig(
+          'Erreur d\'inscription',
+          'Une erreur technique s\'est produite (Code: $errorCode).',
+          Icons.error_outline,
+        );
+    }
+  }
+
+  Future<void> _showSuccessDialog() async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Inscription réussie !',
+          style: TextStyle(
+            color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Félicitations ! Votre compte a été créé avec succès.\n\nEmail: ${_emailController.text.trim()}',
+          style: TextStyle(
+            color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const RedirectionPage()),
+              );
+            },
+            child: Text(
+              'Continuer',
+              style: TextStyle(
+                color: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor,
+              ),
+            ),
+          ),
+        ],
+        backgroundColor: isDarkMode ? AppColors.darkCardColor : AppColors.cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(message),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  void _showErrorSnackbar(String error, String solution, IconData icon) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(
+                  error,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              solution,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.red[700],
+        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class ErrorConfig {
+  final String message;
+  final String solution;
+  final IconData icon;
+
+  ErrorConfig(this.message, this.solution, this.icon);
 }

@@ -46,7 +46,7 @@ class CustomBottomNavBar extends StatelessWidget {
       NavigationDestination(
         icon: Icon(Icons.receipt, color: Colors.white),
         selectedIcon: Icon(Icons.receipt, color: Colors.black),
-        label: 'Transaction',
+        label: 'Transactionsss',
       ),
       NavigationDestination(
         icon: Icon(Icons.savings, color: Colors.white),

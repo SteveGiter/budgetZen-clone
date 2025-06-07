@@ -3,9 +3,6 @@ import '../widgets/Historique_transactions.dart';
 import '../widgets/Transaction_demo.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
-import 'Home.dart';
-import 'Profile.dart';
-import 'Settings.dart';
 
 class Transaction extends StatefulWidget {
   const Transaction({super.key});
@@ -13,7 +10,7 @@ class Transaction extends StatefulWidget {
   @override
   State<Transaction> createState() => _TransactionState();
 }
-// Dans Transaction.dart
+
 class _TransactionState extends State<Transaction> {
   int _currentIndex = 0;
   final List<Widget> _pages = [
@@ -79,12 +76,19 @@ class _TransactionState extends State<Transaction> {
           ),
         ],
       ),
-      body: _pages[_currentIndex],
+      body: CustomScrollView(
+        slivers: [
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: _pages[_currentIndex],
+          ),
+        ],
+      ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 1,
         onTabSelected: (index) {
           if (index != 1) {
-            final routes = ['/HomePage', '/TransactionPage', '/HistoriqueObjectifsEpargneWithoutBackArrow', '/SettingsPage'];
+            final routes = ['/HomePage', '/TransactionPage', '/historique-epargne-no-back', '/SettingsPage'];
             Navigator.pushReplacementNamed(context, routes[index]);
           }
         },

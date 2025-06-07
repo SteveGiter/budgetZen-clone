@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../services/firebase/firestore.dart';
 import '../colors/app_colors.dart';
@@ -21,6 +22,9 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
   DateTime? _dueDate;
   String _selectedCategory = 'Prévisionnel';
   bool _isLoading = false;
+
+  // Limite à 50 caractères pour le nom de l'objectif
+  static const int maxGoalNameLength = 50;
 
   final List<Map<String, dynamic>> categories = [
     {'value': 'Prévisionnel', 'label': '📅 Prévisionnel', 'color': Colors.blue},
@@ -181,13 +185,18 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
     IconData? icon,
     String? Function(String?)? validator,
     TextInputType? keyboardType,
+    int? maxLength,
+    bool showCounter = false,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      maxLength: maxLength,
+      maxLengthEnforcement: MaxLengthEnforcement.enforced,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
+        counterText: showCounter ? null : '',
         prefixIcon: icon != null
             ? Container(
           padding: const EdgeInsets.all(10),
@@ -204,8 +213,10 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
         ),
         filled: true,
         fillColor: Theme.of(context).cardColor,
+        isDense: true, // Optimisation pour Android
       ),
       validator: validator,
+      style: const TextStyle(fontSize: 14), // Taille de police adaptée
     );
   }
 
@@ -230,6 +241,7 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
             fontWeight: _selectedCategory == category['value']
                 ? FontWeight.bold
                 : FontWeight.normal,
+            fontSize: 13, // Taille réduite pour Android
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -271,12 +283,12 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
                 _dueDate == null
                     ? 'Sélectionner une date'
                     : DateFormat('dd MMMM yyyy').format(_dueDate!),
-                style: Theme.of(context).textTheme.bodyLarge,
+                style: const TextStyle(fontSize: 14), // Taille adaptée
               ),
             ),
             if (_dueDate != null)
               IconButton(
-                icon: const Icon(Icons.clear),
+                icon: const Icon(Icons.clear, size: 20), // Taille réduite
                 onPressed: () => setState(() => _dueDate = null),
               ),
           ],
@@ -306,10 +318,17 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
                   _buildTextField(
                     controller: _nameController,
                     label: 'Nom de l\'objectif',
-                    hint: 'Ex: Achat voiture',
+                    hint: 'Ex: Achat voiture ou maison',
                     icon: Icons.flag,
-                    validator: (value) =>
-                    value?.isEmpty ?? true ? 'Ce champ est requis' : null,
+                    maxLength: maxGoalNameLength,
+                    showCounter: true,
+                    validator: (value) {
+                      if (value?.isEmpty ?? true) return 'Ce champ est requis';
+                      if (value!.length > maxGoalNameLength) {
+                        return 'Maximum $maxGoalNameLength caractères';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(

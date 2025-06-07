@@ -26,6 +26,9 @@ class _HistoriqueObjectifsEpargneState extends State<HistoriqueObjectifsEpargne>
   String _selectedFilter = 'Tout';
   final Map<String, bool> _notificationShown = {};
 
+  // Date actuelle au format Timestamp
+  final DateTime currentDate = DateTime(2025, 6, 6, 21, 27); // 09:27 PM WAT, June 06, 2025
+
   @override
   Widget build(BuildContext context) {
     final currentUser = _auth.currentUser;
@@ -44,20 +47,21 @@ class _HistoriqueObjectifsEpargneState extends State<HistoriqueObjectifsEpargne>
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? AppColors.darkBackgroundColor
           : AppColors.backgroundColor,
-      body: Column(
-        children: [
-          _buildFilterButtons(context),
-          const SizedBox(height: 8),
-          Expanded(
-            child: _buildObjectifsList(currentUser.uid, context),
-          ),
-        ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            _buildFilterButtons(context),
+            const SizedBox(height: 8),
+            _buildObjectifsList(currentUser.uid, context),
+          ],
+        ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 2,
         onTabSelected: (index) {
           if (index != 2) {
-            final routes = ['/HomePage', '/TransactionPage', '/HistoriqueObjectifsEpargneWithoutBackArrow', '/SettingsPage'];
+            final routes = ['/HomePage', '/TransactionPage', '/historique-epargne-no-back', '/SettingsPage'];
             Navigator.pushReplacementNamed(context, routes[index]);
           }
         },
@@ -71,7 +75,7 @@ class _HistoriqueObjectifsEpargneState extends State<HistoriqueObjectifsEpargne>
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
-          children: ['Tout', 'En cours', 'Terminé']
+          children: ['Tout', 'En cours', 'Terminé', 'Expiré']
               .map((label) => Padding(
             padding: const EdgeInsets.only(right: 8),
             child: _buildFilterChip(label, context),
@@ -168,10 +172,13 @@ class _HistoriqueObjectifsEpargneState extends State<HistoriqueObjectifsEpargne>
           final data = doc.data() as Map<String, dynamic>;
           final montantCible = (data['montantCible'] as num).toDouble();
           final montantActuel = (data['montantActuel'] as num?)?.toDouble() ?? 0.0;
+          final dateLimite = (data['dateLimite'] as Timestamp).toDate();
           final isCompleted = montantActuel >= montantCible;
+          final isExpired = !isCompleted && currentDate.isAfter(dateLimite);
 
-          if (_selectedFilter == 'En cours') return !isCompleted;
+          if (_selectedFilter == 'En cours') return !isCompleted && !isExpired;
           if (_selectedFilter == 'Terminé') return isCompleted;
+          if (_selectedFilter == 'Expiré') return isExpired;
           return true;
         }).toList();
 
@@ -180,6 +187,8 @@ class _HistoriqueObjectifsEpargneState extends State<HistoriqueObjectifsEpargne>
         }
 
         return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: filteredObjectifs.length,
           itemBuilder: (context, index) {
@@ -217,24 +226,36 @@ class _HistoriqueObjectifsEpargneState extends State<HistoriqueObjectifsEpargne>
         ? AppColors.darkSecondaryTextColor
         : AppColors.secondaryTextColor;
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Tooltip(
-            message: 'Aucun objectif disponible',
-            child: Icon(
-              Icons.savings_outlined,
-              size: 100,
-              color: color,
-            ),
+    return SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height > kToolbarHeight + kBottomNavigationBarHeight + 56
+              ? MediaQuery.of(context).size.height - kToolbarHeight - kBottomNavigationBarHeight - 56
+              : 0.0,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Tooltip(
+                message: 'Aucun objectif disponible',
+                child: Image.asset(
+                  'assets/piggy-bank.png',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                style: TextStyle(fontSize: 16, color: color),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: TextStyle(fontSize: 16, color: color),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -264,6 +285,7 @@ class _HistoriqueObjectifsEpargneState extends State<HistoriqueObjectifsEpargne>
         final streamedMontantActuel = snapshot.data ?? montantActuel;
         final progress = (streamedMontantActuel / montantCible).clamp(0.0, 1.0);
         final isStreamedCompleted = streamedMontantActuel >= montantCible;
+        final isExpired = !isStreamedCompleted && currentDate.isAfter(dateLimite);
 
         if (isStreamedCompleted && !_notificationShown.containsKey(objectifId)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {

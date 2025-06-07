@@ -9,8 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'appPages/About.dart';
-import 'appPages/Historique des objectifsEpargnes/HistoriqueObjectifsEpargneWithBackArrow.dart';
-import 'appPages/Historique des objectifsEpargnes/HistoriqueObjectifsEpargneWithoutBackArrow.dart';
+import 'appPages/HistoriqueObjectifsEpargne/HistoriqueObjectifsEpargneWithBackArrow.dart';
+import 'appPages/HistoriqueObjectifsEpargne/HistoriqueObjectifsEpargneWithoutBackArrow.dart';
 import 'appPages/Home.dart';
 import 'appPages/Login.dart';
 import 'appPages/Profile.dart';
@@ -39,21 +39,20 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>(debugLa
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  //Pour éviter cette erreur: Could not navigate to initial route.
-  // The requested route name was: "/TransactionPage"
-  // There was no corresponding route in the app, and therefore the initial
-  // route specified will be ignored and "/" will be used instead.
-  //setUrlStrategy(PathUrlStrategy()); // important
-
-
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  //initialisation du service de notification
-  //await FirebaseMessagingService().initFCM();
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    // Enregistrez l'erreur ici si nécessaire
+  };
 
-  //await FirebaseAuth.instance.setPersistence(Persistence.LOCAL); //Cette fonctionnaté n'est pas supportée sur mobile
+  PlatformDispatcher.instance.onError = (error, stack) {
+    // Gérer les erreurs non capturées
+    return true; // Indique que l'erreur a été gérée
+  };
+
   await initializeDateFormatting('fr_FR', null); // Initialise les données françaises
 
   runApp(
@@ -71,46 +70,31 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-// Ajout de WidgetsBindingObserver pour écouter les changements de cycle de vie de l'app
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   late Future<String> _initialRouteFuture;
 
   @override
   void initState() {
     super.initState();
-
-    // Enregistrement de l'observateur du cycle de vie
     WidgetsBinding.instance.addObserver(this);
-
-    // Déterminer la route initiale selon si l'utilisateur est connecté ou non
     _initialRouteFuture = _getInitialRoute();
   }
 
   @override
   void dispose() {
-    // Nettoyage : retirer l'observateur quand l'app est détruite
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  // Méthode déclenchée quand l'état de l'app change (active, inactive, en pause, etc.)
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Appliquer la déconnexion uniquement sur mobile (Android ou iOS)
-    if (!kIsWeb &&
-        (Platform.isAndroid || Platform.isIOS) &&
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS) &&
         (state == AppLifecycleState.inactive || state == AppLifecycleState.paused)) {
       FirebaseAuth.instance.signOut();
-
-      navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        '/LoginPage',
-            (Route<dynamic> route) => false,
-      );
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/LoginPage', (Route<dynamic> route) => false);
     }
   }
 
-
-  // Détermine la route initiale selon la session Firebase
   Future<String> _getInitialRoute() async {
     final user = FirebaseAuth.instance.currentUser;
     return user != null ? '/RedirectionPage' : '/WelcomePage';
@@ -120,12 +104,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
 
-    // FutureBuilder attend que la route initiale soit déterminée
     return FutureBuilder<String>(
       future: _initialRouteFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          // Pendant le chargement, afficher un loader
           return const MaterialApp(
             home: Scaffold(
               body: Center(child: CircularProgressIndicator()),
@@ -133,12 +115,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           );
         }
 
-        // Application principale
         return MaterialApp(
-          navigatorKey: navigatorKey, // Permet la navigation globale sans contexte
+          navigatorKey: navigatorKey,
           debugShowCheckedModeBanner: false,
-
-          // Thème clair
           theme: ThemeData(
             brightness: Brightness.light,
             primaryColor: AppColors.primaryColor,
@@ -147,8 +126,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               secondary: AppColors.secondaryColor,
             ),
           ),
-
-          // Thème sombre
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             primaryColor: AppColors.darkPrimaryColor,
@@ -157,14 +134,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               secondary: AppColors.darkSecondaryColor,
             ),
           ),
-
-          // Application du thème selon l'état du switch
           themeMode: themeNotifier.isDark ? ThemeMode.dark : ThemeMode.light,
-
-          // Route initiale selon l'état de connexion
           initialRoute: snapshot.data,
-
-          // Définition des routes principales
           routes: {
             '/WelcomePage': (context) => const WelcomePage(),
             '/LoginPage': (context) => const LoginPage(),
@@ -178,11 +149,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             '/ProfilePage': (context) => const ProfilePage(),
             '/AboutPage': (context) => AboutPage(),
             '/SavingsGoalsPage': (context) => SavingsGoalsPage(),
-            '/HistoriqueObjectifsEpargneWithBackArrow': (context) => const HistoriqueObjectifsEpargneWithBackArrow(),
-            '/HistoriqueObjectifsEpargneWithoutBackArrow': (context) => const HistoriqueObjectifsEpargneWithoutBackArrow(),
+            '/historique-epargne': (context) => const HistoriqueObjectifsEpargneWithBackArrow(),
+            '/historique-epargne-no-back': (context) => const HistoriqueObjectifsEpargneWithoutBackArrow(),
           },
-
-          // Routes personnalisées (fallback)
           onGenerateRoute: (settings) {
             switch (settings.name) {
               case '/InitialPage':

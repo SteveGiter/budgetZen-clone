@@ -439,130 +439,234 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        print('Début de la connexion email');
         await Auth().loginWithEmailAndPassword(
           _emailController.text.trim(),
           _passwordController.text.trim(),
         );
+
         if (mounted) {
-          print('Connexion email réussie pour ${_emailController.text.trim()}');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Connexion réussie ! Bienvenue',
-                style: const TextStyle(color: Colors.white),
-              ),
-              backgroundColor: AppColors.primaryColor,
-              duration: const Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
-            ),
-          );
-          // Attendre que le SnackBar soit visible avant de naviguer
+          _showSuccessSnackbar('Connexion réussie ! Bienvenue');
           await Future.delayed(const Duration(seconds: 2));
-          if (mounted) {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            print('Redirection vers RedirectionPage');
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const RedirectionPage()),
-            );
-          }
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const RedirectionPage()),
+          );
         }
       } on FirebaseAuthException catch (e) {
-        print('Erreur FirebaseAuthException: ${e.code} - ${e.message}');
-        String errorMessage;
-        switch (e.code) {
-          case 'invalid-email':
-            errorMessage = 'Format d\'email invalide.';
-            break;
-          case 'user-disabled':
-            errorMessage = 'Compte désactivé.';
-            break;
-          case 'user-not-found':
-            errorMessage = 'Aucun compte trouvé.';
-            break;
-          case 'wrong-password':
-            errorMessage = 'Mot de passe incorrect.';
-            break;
-          case 'too-many-requests':
-            errorMessage = 'Trop de tentatives. Réessayez plus tard.';
-            break;
-          case 'network-request-failed':
-            errorMessage = 'Problème de connexion internet.';
-            break;
-          default:
-            errorMessage = 'Erreur: ${e.code}.';
-        }
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(child: Text(errorMessage)),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    },
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.errorColor,
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
-            ),
-          );
-        }
+        _handleFirebaseAuthError(e);
+      } on TimeoutException catch (_) {
+        _showErrorSnackbar(
+          'Temps d\'attente dépassé',
+          'Le serveur met trop de temps à répondre. Veuillez réessayer plus tard.',
+          Icons.timer_off,
+        );
       } catch (e) {
-        print('Erreur inattendue: $e');
-        String errorMessage = 'Erreur inattendue.';
-        if (e is TimeoutException) {
-          errorMessage = 'Temps d\'attente dépassé.';
-        }
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(child: Text(errorMessage)),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    },
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.errorColor,
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
-            ),
-          );
-        }
+        _showErrorSnackbar(
+          'Erreur inattendue',
+          'Une erreur technique s\'est produite. Veuillez réessayer.',
+          Icons.error_outline,
+        );
       } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          print('Fin de la tentative de connexion email');
-        }
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
+
+  void _handleFirebaseAuthError(FirebaseAuthException e) {
+    final errorConfig = _getErrorConfig(e.code);
+    _showErrorSnackbar(errorConfig.message, errorConfig.solution, errorConfig.icon);
+  }
+
+  ErrorConfig _getErrorConfig(String errorCode) {
+    switch (errorCode) {
+    // Erreurs email/mot de passe
+      case 'invalid-email':
+        return ErrorConfig(
+          'Format d\'email incorrect',
+          'Veuillez entrer une adresse email valide (ex: utilisateur@exemple.com)',
+          Icons.email,
+        );
+      case 'user-disabled':
+        return ErrorConfig(
+          'Compte désactivé',
+          'Votre compte a été désactivé. Contactez notre support pour plus d\'informations.',
+          Icons.person_off,
+        );
+      case 'user-not-found':
+        return ErrorConfig(
+          'Compte non trouvé',
+          'Aucun compte n\'est associé à cet email. Vérifiez l\'adresse ou inscrivez-vous.',
+          Icons.person_search,
+        );
+      case 'wrong-password':
+        return ErrorConfig(
+          'Mot de passe incorrect',
+          'Le mot de passe saisi est incorrect. Vérifiez votre mot de passe ou utilisez "Mot de passe oublié".',
+          Icons.lock_reset,
+        );
+      case 'too-many-requests':
+        return ErrorConfig(
+          'Trop de tentatives',
+          'Veuillez patienter quelques minutes avant de réessayer. Pour votre sécurité, nous limitons les tentatives de connexion.',
+          Icons.timer,
+        );
+      case 'network-request-failed':
+        return ErrorConfig(
+          'Problème de connexion',
+          'Vérifiez votre connexion internet et réessayez. Si le problème persiste, contactez notre support.',
+          Icons.wifi_off,
+        );
+      case 'operation-not-allowed':
+        return ErrorConfig(
+          'Connexion désactivée',
+          'La connexion par email/mot de passe n\'est pas activée pour cette application.',
+          Icons.block,
+        );
+      case 'invalid-credential':
+        return ErrorConfig(
+          'Identifiants invalides',
+          'Vos identifiants sont incorrects ou ont expiré. Veuillez réessayer.',
+          Icons.verified_user,
+        );
+    // Erreurs Google Sign-In
+      case 'account-exists-with-different-credential':
+        return ErrorConfig(
+          'Email déjà utilisé',
+          'Cet email est déjà associé à un autre compte. Connectez-vous avec la méthode originale.',
+          Icons.alternate_email,
+        );
+      case 'invalid-verification-code':
+        return ErrorConfig(
+          'Code de vérification invalide',
+          'Le code de vérification est incorrect ou a expiré. Veuillez réessayer.',
+          Icons.sms_failed,
+        );
+      case 'invalid-verification-id':
+        return ErrorConfig(
+          'ID de vérification invalide',
+          'L\'ID de vérification est incorrect. Veuillez réessayer.',
+          Icons.vpn_key,
+        );
+      case 'quota-exceeded':
+        return ErrorConfig(
+          'Limite dépassée',
+          'Nous avons atteint la limite de requêtes. Veuillez réessayer plus tard.',
+          Icons.data_usage,
+        );
+    // Erreurs génériques
+      default:
+        return ErrorConfig(
+          'Erreur de connexion',
+          'Une erreur technique s\'est produite (Code: $errorCode). Veuillez réessayer.',
+          Icons.error_outline,
+        );
+    }
+  }
+
+  void _showSuccessSnackbar(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  void _showErrorSnackbar(String error, String solution, IconData icon) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    error,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              solution,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.red[700],
+        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      final userCredential = await Auth().signInWithGoogle();
+      if (userCredential != null && mounted) {
+        _showSuccessSnackbar('Connexion réussie ! Bienvenue ${userCredential.user?.displayName ?? ''}');
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const RedirectionPage()),
+          );
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code != 'cancelled') {
+        _handleFirebaseAuthError(e);
+      }
+    } catch (e) {
+      _showErrorSnackbar(
+        'Erreur inattendue',
+        'Une erreur s\'est produite lors de la connexion avec Google. Veuillez réessayer.',
+        Icons.error_outline,
+      );
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }
+}
+
+class ErrorConfig {
+  final String message;
+  final String solution;
+  final IconData icon;
+
+  ErrorConfig(this.message, this.solution, this.icon);
 }

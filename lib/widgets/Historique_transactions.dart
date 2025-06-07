@@ -45,14 +45,15 @@ class _HistoriqueTransactionState extends State<HistoriqueTransaction> {
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? AppColors.darkBackgroundColor
           : AppColors.backgroundColor,
-      body: Column(
-        children: [
-          _buildFilterButtons(context),
-          const SizedBox(height: 8),
-          Expanded(
-            child: _buildTransactionList(currentUser.uid, context),
-          ),
-        ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            _buildFilterButtons(context),
+            const SizedBox(height: 8),
+            _buildTransactionList(currentUser.uid, context),
+          ],
+        ),
       ),
     );
   }
@@ -110,7 +111,7 @@ class _HistoriqueTransactionState extends State<HistoriqueTransaction> {
       padding: const EdgeInsets.only(top: 24, bottom: 8),
       child: Row(
         children: [
-          Expanded(
+          const Expanded(
             child: Divider(thickness: 1),
           ),
           Padding(
@@ -125,14 +126,13 @@ class _HistoriqueTransactionState extends State<HistoriqueTransaction> {
               ),
             ),
           ),
-          Expanded(
+          const Expanded(
             child: Divider(thickness: 1),
           ),
         ],
       ),
     );
   }
-
 
   Widget _buildTransactionList(String userId, BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
@@ -148,7 +148,7 @@ class _HistoriqueTransactionState extends State<HistoriqueTransaction> {
           return Center(
             child: Text(
               'Erreur: ${snapshot.error}',
-              style: TextStyle(color: AppColors.errorColor),
+              style: const TextStyle(color: AppColors.errorColor),
             ),
           );
         }
@@ -167,7 +167,6 @@ class _HistoriqueTransactionState extends State<HistoriqueTransaction> {
           return _buildEmptyState("Aucune transaction trouvée", context);
         }
 
-        // 🔥 Filtrage des transactions supprimées pour l'utilisateur
         final visibleTransactions = snapshot.data!.docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final expediteurDeleted = data['expediteurDeleted'];
@@ -175,16 +174,11 @@ class _HistoriqueTransactionState extends State<HistoriqueTransaction> {
           final expediteurId = data['expediteurId'];
           final destinataireId = data['destinataireId'];
 
-          // Si utilisateur est l’expéditeur et a supprimé => ne pas afficher
           if (expediteurId == userId && expediteurDeleted == userId) return false;
-
-          // Si utilisateur est le destinataire et a supprimé => ne pas afficher
           if (destinataireId == userId && destinataireDeleted == userId) return false;
-
           return true;
         }).toList();
 
-        // 🔍 Appliquer le filtre (Revenu / Dépense)
         final filteredTransactions = visibleTransactions.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final isIncome = data['destinataireId'] == userId;
@@ -198,6 +192,8 @@ class _HistoriqueTransactionState extends State<HistoriqueTransaction> {
         }
 
         return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: filteredTransactions.length,
           itemBuilder: (context, index) {
@@ -226,36 +222,43 @@ class _HistoriqueTransactionState extends State<HistoriqueTransaction> {
             );
           },
         );
-
       },
     );
   }
-
-
 
   Widget _buildEmptyState(String message, BuildContext context) {
     final color = Theme.of(context).brightness == Brightness.dark
         ? AppColors.darkSecondaryTextColor
         : AppColors.secondaryTextColor;
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Tooltip(
-            message: 'Aucune transaction disponible',
-            child: Image.asset(
-              'assets/noTransactionImage.png', // chemin de votre image
-              width: 200,
-              height: 200,
-            ),
+    return SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height - kToolbarHeight - kBottomNavigationBarHeight - 56,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Tooltip(
+                message: 'Aucune transaction disponible',
+                child: Image.asset(
+                  'assets/noTransactionImage.png',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                style: TextStyle(fontSize: 16, color: color),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: TextStyle(fontSize: 16, color: color),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -299,7 +302,7 @@ class _HistoriqueTransactionState extends State<HistoriqueTransaction> {
                       const SizedBox(height: 2),
                       Text(
                         categorie.toUpperCase(),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
@@ -316,7 +319,7 @@ class _HistoriqueTransactionState extends State<HistoriqueTransaction> {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.delete, color: AppColors.errorColor),
+                  icon: const Icon(Icons.delete, color: AppColors.errorColor),
                   onPressed: () {
                     _showDeleteDialog(doc.id, context);
                   },
@@ -326,11 +329,11 @@ class _HistoriqueTransactionState extends State<HistoriqueTransaction> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(Icons.calendar_today, size: 16),
+                const Icon(Icons.calendar_today, size: 16),
                 const SizedBox(width: 8),
                 Text(
                   dateFormat.format(dateHeure),
-                  style: TextStyle(fontSize: 13),
+                  style: const TextStyle(fontSize: 13),
                 ),
               ],
             ),
@@ -356,7 +359,7 @@ class _HistoriqueTransactionState extends State<HistoriqueTransaction> {
               child: const Text("Supprimer"),
               onPressed: () async {
                 Navigator.of(context).pop();
-                await _firestoreService.softDeleteTransaction(transactionId, _auth.currentUser!.uid); // Passer l'ID de l'utilisateur
+                await _firestoreService.softDeleteTransaction(transactionId, _auth.currentUser!.uid);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Transaction supprimée")),
                 );
