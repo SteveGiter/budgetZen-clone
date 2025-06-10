@@ -146,7 +146,7 @@ class AboutPage extends StatelessWidget {
                       _buildContactItem(
                         context,
                         icon: Icons.phone,
-                        text: '+33 1 23 45 67 89',
+                        text: '+237 6 86 96 28 46',
                       ),
                       _buildContactItem(
                         context,

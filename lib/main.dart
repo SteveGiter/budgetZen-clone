@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:budget_zen/appPages/Initial.dart';
 import 'package:budget_zen/appPages/Settings.dart';
 import 'package:budget_zen/appPages/SignUp.dart';
+import 'package:budget_zen/appPages/adminPages/AddUser.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -19,7 +20,8 @@ import 'appPages/Reset_password.dart';
 import 'appPages/SavingsGoalsPage.dart';
 import 'appPages/Transaction.dart';
 import 'appPages/Welcome.dart';
-import 'appPages/admin.dart';
+import 'appPages/adminPages/AdminProfile.dart';
+import 'appPages/adminPages/Dashboard.dart';
 import 'colors/app_colors.dart';
 import 'firebase_options.dart';
 
@@ -137,13 +139,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           themeMode: themeNotifier.isDark ? ThemeMode.dark : ThemeMode.light,
           initialRoute: snapshot.data,
           routes: {
+            //users routes
             '/WelcomePage': (context) => const WelcomePage(),
             '/LoginPage': (context) => const LoginPage(),
             '/SignUpPage': (context) => const SignUpPage(),
             '/ResetPasswordPage': (context) => const ResetPasswordPage(),
             '/RedirectionPage': (context) => const RedirectionPage(),
             '/HomePage': (context) => const HomePage(),
-            '/AdminPage': (context) => const AdminWelcomePage(),
+            '/AdminPage': (context) => const DashboardAdminPage(),
             '/TransactionPage': (context) => const Transaction(),
             '/SettingsPage': (context) => const SettingsPage(),
             '/ProfilePage': (context) => const ProfilePage(),
@@ -151,6 +154,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             '/SavingsGoalsPage': (context) => SavingsGoalsPage(),
             '/historique-epargne': (context) => const HistoriqueObjectifsEpargneWithBackArrow(),
             '/historique-epargne-no-back': (context) => const HistoriqueObjectifsEpargneWithoutBackArrow(),
+
+            //administrateur routes
+            '/dashboardPage': (context) => const DashboardAdminPage(),
+            '/addusersPage': (context) => const AddUsersPage(),
+            '/adminProfilPage':  (context) => const AdminProfilePage(),
           },
           onGenerateRoute: (settings) {
             switch (settings.name) {
