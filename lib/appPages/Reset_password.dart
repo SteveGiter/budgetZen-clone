@@ -100,13 +100,85 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           fillColor: isDarkMode ? AppColors.darkBackgroundColor : Colors.white,
                           contentPadding: isSmallScreen ? const EdgeInsets.symmetric(vertical: 10, horizontal: 10) : null,
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return 'Veuillez entrer votre email';
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                            return 'Email invalide';
-                          }
-                          return null;
-                        },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez entrer votre email';
+                            }
+
+                            // Supprimer les espaces avant/après
+                            final trimmedValue = value.trim();
+
+                            // 1. Vérification longueur minimale (a@b.c = 5 caractères minimum)
+                            if (trimmedValue.length < 5) {
+                              return 'L\'email est trop court';
+                            }
+
+                            // 2. Vérification longueur maximale
+                            if (trimmedValue.length > 320) {
+                              return 'L\'email est trop long (max 320 caractères)';
+                            }
+
+                            // 3. Ne doit pas commencer par un caractère spécial
+                            if (RegExp(r'^[^a-zA-Z0-9]').hasMatch(trimmedValue)) {
+                              return 'L\'email ne peut pas commencer par un caractère spécial';
+                            }
+
+                            // 4. Doit contenir un et un seul @
+                            final atCount = trimmedValue.split('@').length - 1;
+                            if (atCount == 0) {
+                              return 'L\'email doit contenir un @';
+                            }
+                            if (atCount > 1) {
+                              return 'L\'email ne peut contenir qu\'un seul @';
+                            }
+
+                            // Séparation partie locale et domaine
+                            final parts = trimmedValue.split('@');
+                            final localPart = parts[0];
+                            final domainPart = parts[1];
+
+                            // 5. Vérification partie locale (avant @)
+                            if (localPart.isEmpty) {
+                              return 'La partie avant le @ est vide';
+                            }
+
+                            // 6. Vérification partie domaine (après @)
+                            if (domainPart.isEmpty) {
+                              return 'La partie après le @ est vide';
+                            }
+
+                            // 7. Le domaine doit contenir un point
+                            if (!domainPart.contains('.')) {
+                              return 'Le domaine doit contenir un point (ex: exemple.com)';
+                            }
+
+                            // 8. Le point ne peut pas être en début ou fin de domaine
+                            if (domainPart.startsWith('.') || domainPart.endsWith('.')) {
+                              return 'Le domaine ne peut pas commencer ou finir par un point';
+                            }
+
+                            // 9. Validation format complet avec regex
+                            final emailRegex = RegExp(
+                                r'^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$'
+                            );
+
+                            if (!emailRegex.hasMatch(trimmedValue)) {
+                              return 'Format d\'email invalide';
+                            }
+
+                            // 10. Vérifier les séquences de points invalides (..)
+                            if (trimmedValue.contains('..')) {
+                              return 'L\'email ne peut pas contenir deux points consécutifs';
+                            }
+
+                            // 11. Vérifier le TLD (dernière partie après le dernier point)
+                            final tld = domainPart.split('.').last;
+                            if (tld.length < 2) {
+                              return 'L\'extension de domaine doit faire au moins 2 caractères';
+                            }
+
+                            return null;
+                          },
                       ),
                     ),
                     SizedBox(height: isSmallScreen ? 30 : 30),

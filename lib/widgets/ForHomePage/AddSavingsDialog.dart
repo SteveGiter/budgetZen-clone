@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/firebase/firestore.dart';
+import 'BudgetValidator.dart';
+import 'package:collection/collection.dart';
 
 class AddSavingsDialog extends StatefulWidget {
-  final Function(double, String, String?, String) onSavingsAdded;
+  final Function(double, String, String?, String, List<Map<String, dynamic>>) onSavingsAdded;
   final String userId;
   final FirestoreService firestoreService;
 
@@ -29,7 +30,6 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
   bool _isLoading = true;
   bool _isSubmitting = false;
 
-  // Constante pour la limite de caractères
   static const int maxDescriptionLength = 50;
 
   @override
@@ -42,7 +42,7 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
     try {
       final goalsSnapshot = await widget.firestoreService.getObjectifsEpargne(widget.userId);
       if (mounted) {
-        final currentDate = DateTime.now(); // Date actuelle : 7 juin 2025
+        final currentDate = DateTime.now();
         setState(() {
           _savingsGoals = goalsSnapshot.docs
               .map((doc) {
@@ -54,25 +54,20 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
               'montantActuel': (data['montantActuel'] as num?)?.toDouble() ?? 0.0,
               'montantCible': (data['montantCible'] as num?)?.toDouble() ?? 0.0,
               'isCompleted': (data['isCompleted'] as bool?) ?? false,
-              'dateLimite': data['dateLimite'] as Timestamp?, // Récupérer la date limite
+              'dateLimite': data['dateLimite'] as Timestamp?,
             };
           })
               .where((goal) {
-            // Vérifier si l'objectif est atteint
             final isCompleted = goal['isCompleted'] as bool;
             final montantActuel = goal['montantActuel'] as double;
             final montantCible = goal['montantCible'] as double;
             final isGoalReached = isCompleted || montantActuel >= montantCible;
-
-            // Vérifier si l'objectif est expiré
             final dateLimite = goal['dateLimite'] as Timestamp?;
             bool isExpired = false;
             if (dateLimite != null) {
               final goalDeadline = dateLimite.toDate();
               isExpired = goalDeadline.isBefore(currentDate);
             }
-
-            // Garder uniquement les objectifs non atteints et non expirés
             return !isGoalReached && !isExpired;
           })
               .toList();
@@ -91,8 +86,9 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors du chargement des objectifs: $e'),
+            content: Text('Erreur lors du chargement des objectifs : $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -141,7 +137,6 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
                 },
               ),
               const SizedBox(height: 20),
-
               // Sélection de l'objectif
               DropdownButtonFormField<String>(
                 value: _selectedGoalId,
@@ -156,30 +151,20 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
                     ),
                   ),
                 ]
-                    : _savingsGoals.map((Map<String, dynamic> goal) {
-                  final goalName = goal['nomObjectif'] as String;
+                    : _savingsGoals.map((goal) {
                   return DropdownMenuItem<String>(
                     value: goal['id'],
-                    child: Tooltip(
-                      message: goalName,
-                      child: Text(
-                        goalName,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
+                    child: Text(goal['nomObjectif']),
                   );
                 }).toList(),
-                onChanged: _savingsGoals.isEmpty
-                    ? null
-                    : (String? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      _selectedGoalId = newValue;
-                      _selectedGoalCategory = _savingsGoals
-                          .firstWhere((goal) => goal['id'] == newValue)['categorie'];
-                    });
-                  }
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedGoalId = newValue;
+                    if (newValue != null) {
+                      final selectedGoal = _savingsGoals.firstWhereOrNull((goal) => goal['id'] == newValue);
+                      _selectedGoalCategory = selectedGoal?['categorie'];
+                    }
+                  });
                 },
                 decoration: const InputDecoration(
                   labelText: 'Objectif d\'épargne',
@@ -190,7 +175,6 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
                 isExpanded: true,
               ),
               const SizedBox(height: 20),
-
               // Champ Description
               TextFormField(
                 controller: _descriptionController,
@@ -200,7 +184,6 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
                   counterText: '${_descriptionController.text.length}/$maxDescriptionLength',
                 ),
                 maxLength: maxDescriptionLength,
-                maxLengthEnforcement: MaxLengthEnforcement.enforced,
                 maxLines: 2,
               ),
             ],
@@ -212,27 +195,6 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Annuler'),
         ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-            Navigator.pushNamed(context, '/SavingsGoalsPage');
-          },
-          child: const Text(
-            'Créer un nouvel objectif',
-            style: TextStyle(color: Colors.blue),
-          ),
-        ),
-        if (_savingsGoals.isEmpty)
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/SavingsGoalsPage');
-            },
-            child: const Text(
-              'Créer un objectif',
-              style: TextStyle(color: Colors.blue),
-            ),
-          ),
         ElevatedButton(
           onPressed: _isSubmitting || _savingsGoals.isEmpty
               ? null
@@ -241,9 +203,26 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
               setState(() => _isSubmitting = true);
               try {
                 final amount = double.parse(_amountController.text);
+
+                // Valider le budget en utilisant la classe utilitaire
+                final isBudgetValid = await BudgetValidator.validateBudget(
+                  context,
+                  widget.firestoreService,
+                  widget.userId,
+                  amount,
+                  _selectedGoalId,
+                  _savingsGoals,
+                );
+
+                if (!isBudgetValid) {
+                  setState(() => _isSubmitting = false);
+                  return;
+                }
+
                 final description = _descriptionController.text.isNotEmpty
                     ? _descriptionController.text
                     : null;
+
                 if (_selectedGoalCategory == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -254,28 +233,24 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
                   setState(() => _isSubmitting = false);
                   return;
                 }
+                print('AddSavingsDialog: _selectedGoalId=$_selectedGoalId, _savingsGoals=$_savingsGoals');
                 await widget.onSavingsAdded(
                   amount,
                   _selectedGoalCategory!,
                   description,
                   _selectedGoalId!,
+                  _savingsGoals,
                 );
-                if (mounted) {
-                  Navigator.pop(context);
-                }
+                Navigator.pop(context);
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Erreur lors de l\'ajout: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erreur lors de l\'ajout : $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               } finally {
-                if (mounted) {
-                  setState(() => _isSubmitting = false);
-                }
+                setState(() => _isSubmitting = false);
               }
             }
           },
@@ -283,10 +258,7 @@ class _AddSavingsDialogState extends State<AddSavingsDialog> {
               ? const SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2),
           )
               : const Text('Ajouter'),
         ),

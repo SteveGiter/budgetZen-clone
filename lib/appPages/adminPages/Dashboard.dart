@@ -1,5 +1,6 @@
 import 'package:budget_zen/services/firebase/firestore.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../widgets/ForAdmin/admin_bottom_nav_bar.dart';
@@ -26,23 +27,42 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
         showBackArrow: false,
         showDarkModeButton: true,
       ),
-      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[100],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Liste des Utilisateurs',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isDarkMode ? Colors.white : Colors.black87,
+      backgroundColor: Colors.transparent, // Keep Scaffold background transparent
+      body: Column(
+        children: [
+          Expanded( // Use Expanded to fill available space
+            child: Container(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: const AssetImage('assets/Administrateur.png'),
+                  fit: BoxFit.cover, // Cover the entire container
+                  alignment: Alignment.bottomCenter, // Align image bottom with container bottom
+                  colorFilter: ColorFilter.mode(
+                    isDarkMode ? Colors.black.withOpacity(0.4) : Colors.white.withOpacity(0.2),
+                    BlendMode.darken,
+                  ),
+                ),
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Liste des Utilisateurs',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildUsersList(context),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            _buildUsersList(context),
-          ],
-        ),
+          ),
+        ],
       ),
       bottomNavigationBar: AdminBottomNavBar(
         currentIndex: 0,
@@ -96,7 +116,10 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
   Widget _buildUserCard(QueryDocumentSnapshot doc, BuildContext context) {
     final data = doc.data() as Map<String, dynamic>;
     final uid = doc.id;
-    final nomPrenom = data['nomPrenom'] as String? ?? 'Non défini';
+    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+    final isCurrentUser = uid == currentUserUid;
+
+    final nomPrenom = isCurrentUser ? 'Vous' : (data['nomPrenom'] as String? ?? 'Non défini');
     final email = data['email'] as String? ?? 'Non défini';
     final role = data['role'] as String? ?? 'utilisateur';
     final dateInscription = (data['dateInscription'] as Timestamp?)?.toDate();
@@ -126,12 +149,13 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () {
-                    _showDeleteDialog(uid, nomPrenom, context);
-                  },
-                ),
+                if (!isCurrentUser) // N'affiche le bouton de suppression que si ce n'est pas l'utilisateur actuel
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () {
+                      _showDeleteDialog(uid, nomPrenom, context);
+                    },
+                  ),
               ],
             ),
             const SizedBox(height: 8),

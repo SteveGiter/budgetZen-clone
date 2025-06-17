@@ -36,405 +36,536 @@ class _LoginPageState extends State<LoginPage> {
 
     return Scaffold(
       backgroundColor: isDarkMode ? AppColors.darkBackgroundColor : AppColors.backgroundColor,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: constraints.maxHeight,
-                maxWidth: constraints.maxWidth,
-              ),
-              child: IntrinsicHeight(
-                child: Column(
-                  children: [
-                    SizedBox(height: isSmallScreen ? 20 : 40),
-                    Center(
-                      child: Container(
-                        padding: EdgeInsets.all(isSmallScreen ? 10 : 20),
-                        decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.grey[900] : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Image.asset(
-                          'assets/logoWithProjectName.png',
-                          height: isSmallScreen ? screenWidth * 0.35 : screenWidth * 0.25,
-                          width: isSmallScreen ? screenWidth * 0.35 : screenWidth * 0.25,
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/Illustration de gestion financière.jpg'),
+            fit: BoxFit.cover, // Ajuste l'image pour couvrir tout l'écran
+            colorFilter: ColorFilter.mode(
+              Colors.black.withOpacity(0.5), // Opacité pour améliorer la lisibilité
+              BlendMode.darken,
+            ),
+          ),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                  maxWidth: constraints.maxWidth,
+                ),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      SizedBox(height: isSmallScreen ? 20 : 40),
+                      Center(
+                        child: Container(
+                          padding: EdgeInsets.all(isSmallScreen ? 10 : 20),
+                          decoration: BoxDecoration(
+                            color: isDarkMode ? Colors.grey[900] : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Image.asset(
+                            'assets/logoWithProjectName.png',
+                            height: isSmallScreen ? screenWidth * 0.35 : screenWidth * 0.25,
+                            width: isSmallScreen ? screenWidth * 0.35 : screenWidth * 0.25,
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(height: isSmallScreen ? 10 : 30),
-                    Expanded(
-                      child: Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: isSmallScreen ? 15 : 30),
-                        decoration: BoxDecoration(
-                          color: isDarkMode ? AppColors.darkCardColor : AppColors.cardColor,
-                          borderRadius: const BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: isDarkMode ? Colors.black.withOpacity(0.3) : AppColors.borderColor.withOpacity(0.5),
-                              blurRadius: 6,
-                              offset: const Offset(0, -2),
-                            ),
-                          ],
-                        ),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Ravie de vous revoir !',
-                                style: TextStyle(
-                                  fontSize: isSmallScreen ? 18 : 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor,
-                                ),
+                      SizedBox(height: isSmallScreen ? 10 : 30),
+                      Expanded(
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: isSmallScreen ? 15 : 30),
+                          decoration: BoxDecoration(
+                            color: isDarkMode ? AppColors.darkCardColor : AppColors.cardColor,
+                            borderRadius: const BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isDarkMode ? Colors.black.withOpacity(0.3) : AppColors.borderColor.withOpacity(0.5),
+                                blurRadius: 6,
+                                offset: const Offset(0, -2),
                               ),
-                              SizedBox(height: isSmallScreen ? 5 : 10),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 10 : 20),
-                                child: Text(
-                                  'Connectez-vous à votre compte existant',
+                            ],
+                          ),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Ravie de vous revoir !',
                                   style: TextStyle(
-                                    fontSize: isSmallScreen ? 12 : 16,
-                                    color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor,
+                                    fontSize: isSmallScreen ? 18 : 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor,
                                   ),
-                                  textAlign: TextAlign.center,
                                 ),
-                              ),
-                              SizedBox(height: isSmallScreen ? 15 : 30),
-                              TextFormField(
-                                controller: _emailController,
-                                style: TextStyle(fontSize: isSmallScreen ? 14 : null, color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  prefixIcon: Icon(Icons.email, size: isSmallScreen ? 20 : null, color: isDarkMode ? AppColors.darkIconColor : AppColors.iconColor),
-                                  labelText: "Email",
-                                  labelStyle: TextStyle(fontSize: isSmallScreen ? 14 : null, color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide(color: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor, width: 2),
-                                  ),
-                                  filled: true,
-                                  fillColor: isDarkMode ? AppColors.darkBackgroundColor : Colors.white,
-                                  contentPadding: isSmallScreen ? const EdgeInsets.symmetric(vertical: 10, horizontal: 10) : null,
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Veuillez entrer votre email';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              SizedBox(height: isSmallScreen ? 10 : 20),
-                              TextFormField(
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
-                                style: TextStyle(fontSize: isSmallScreen ? 14 : null, color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  prefixIcon: Icon(Icons.lock, size: isSmallScreen ? 20 : null, color: isDarkMode ? AppColors.darkIconColor : AppColors.iconColor),
-                                  labelText: "Mot de passe",
-                                  labelStyle: TextStyle(fontSize: isSmallScreen ? 14 : null, color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide(color: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor, width: 2),
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, size: isSmallScreen ? 20 : null, color: isDarkMode ? AppColors.darkIconColor : AppColors.iconColor),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
-                                  ),
-                                  filled: true,
-                                  fillColor: isDarkMode ? AppColors.darkBackgroundColor : Colors.white,
-                                  contentPadding: isSmallScreen ? const EdgeInsets.symmetric(vertical: 10, horizontal: 10) : null,
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Veuillez entrer votre mot de passe';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              SizedBox(height: isSmallScreen ? 5 : 12),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(context, '/ResetPasswordPage');
-                                  },
+                                SizedBox(height: isSmallScreen ? 5 : 10),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 10 : 20),
                                   child: Text(
-                                    'Mot de passe oublié',
-                                    style: TextStyle(fontSize: isSmallScreen ? 12 : null, color: isDarkMode ? AppColors.darkSecondaryColor : AppColors.secondaryColor),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: isSmallScreen ? 8 : 18),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: _isLoading ? null : _login,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor,
-                                    padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10 : 16),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  ),
-                                  child: _isLoading
-                                      ? SizedBox(
-                                    height: isSmallScreen ? 20 : 24,
-                                    width: isSmallScreen ? 20 : 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 3,
-                                      color: AppColors.buttonTextColor,
-                                    ),
-                                  )
-                                      : Text(
-                                    'Se connecter',
+                                    'Connectez-vous à votre compte existant',
                                     style: TextStyle(
-                                      color: AppColors.buttonTextColor,
-                                      fontSize: isSmallScreen ? 14 : 16,
-                                      fontWeight: FontWeight.w600,
+                                      fontSize: isSmallScreen ? 12 : 16,
+                                      color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                SizedBox(height: isSmallScreen ? 15 : 30),
+                                TextFormField(
+                                  controller: _emailController,
+                                  style: TextStyle(fontSize: isSmallScreen ? 14 : null, color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor),
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    prefixIcon: Icon(Icons.email, size: isSmallScreen ? 20 : null, color: isDarkMode ? AppColors.darkIconColor : AppColors.iconColor),
+                                    labelText: "Email",
+                                    labelStyle: TextStyle(fontSize: isSmallScreen ? 14 : null, color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(color: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor, width: 2),
+                                    ),
+                                    filled: true,
+                                    fillColor: isDarkMode ? AppColors.darkBackgroundColor : Colors.white,
+                                    contentPadding: isSmallScreen ? const EdgeInsets.symmetric(vertical: 10, horizontal: 10) : null,
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Veuillez entrer votre email';
+                                    }
+
+                                    // Supprimer les espaces avant/après
+                                    final trimmedValue = value.trim();
+
+                                    // 1. Vérification longueur minimale (a@b.c = 5 caractères minimum)
+                                    if (trimmedValue.length < 5) {
+                                      return 'L\'email est trop court';
+                                    }
+
+                                    // 2. Vérification longueur maximale
+                                    if (trimmedValue.length > 320) {
+                                      return 'L\'email est trop long (max 320 caractères)';
+                                    }
+
+                                    // 3. Ne doit pas commencer par un caractère spécial
+                                    if (RegExp(r'^[^a-zA-Z0-9]').hasMatch(trimmedValue)) {
+                                      return 'L\'email ne peut pas commencer par un caractère spécial';
+                                    }
+
+                                    // 4. Doit contenir un et un seul @
+                                    final atCount = trimmedValue.split('@').length - 1;
+                                    if (atCount == 0) {
+                                      return 'L\'email doit contenir un @';
+                                    }
+                                    if (atCount > 1) {
+                                      return 'L\'email ne peut contenir qu\'un seul @';
+                                    }
+
+                                    // Séparation partie locale et domaine
+                                    final parts = trimmedValue.split('@');
+                                    final localPart = parts[0];
+                                    final domainPart = parts[1];
+
+                                    // 5. Vérification partie locale (avant @)
+                                    if (localPart.isEmpty) {
+                                      return 'La partie avant le @ est vide';
+                                    }
+
+                                    // 6. Vérification partie domaine (après @)
+                                    if (domainPart.isEmpty) {
+                                      return 'La partie après le @ est vide';
+                                    }
+
+                                    // 7. Le domaine doit contenir un point
+                                    if (!domainPart.contains('.')) {
+                                      return 'Le domaine doit contenir un point (ex: exemple.com)';
+                                    }
+
+                                    // 8. Le point ne peut pas être en début ou fin de domaine
+                                    if (domainPart.startsWith('.') || domainPart.endsWith('.')) {
+                                      return 'Le domaine ne peut pas commencer ou finir par un point';
+                                    }
+
+                                    // 9. Validation format complet avec regex
+                                    final emailRegex = RegExp(
+                                        r'^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$'
+                                    );
+
+                                    if (!emailRegex.hasMatch(trimmedValue)) {
+                                      return 'Format d\'email invalide';
+                                    }
+
+                                    // 10. Vérifier les séquences de points invalides (..)
+                                    if (trimmedValue.contains('..')) {
+                                      return 'L\'email ne peut pas contenir deux points consécutifs';
+                                    }
+
+                                    // 11. Vérifier le TLD (dernière partie après le dernier point)
+                                    final tld = domainPart.split('.').last;
+                                    if (tld.length < 2) {
+                                      return 'L\'extension de domaine doit faire au moins 2 caractères';
+                                    }
+
+                                    return null;
+                                  },
+                                ),
+                                SizedBox(height: isSmallScreen ? 10 : 20),
+                                TextFormField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  style: TextStyle(fontSize: isSmallScreen ? 14 : null, color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor),
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    prefixIcon: Icon(Icons.lock, size: isSmallScreen ? 20 : null, color: isDarkMode ? AppColors.darkIconColor : AppColors.iconColor),
+                                    labelText: "Mot de passe",
+                                    labelStyle: TextStyle(fontSize: isSmallScreen ? 14 : null, color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(color: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor, width: 2),
+                                    ),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, size: isSmallScreen ? 20 : null, color: isDarkMode ? AppColors.darkIconColor : AppColors.iconColor),
+                                      onPressed: () {
+                                        setState(() {
+                                          _obscurePassword = !_obscurePassword;
+                                        });
+                                      },
+                                    ),
+                                    filled: true,
+                                    fillColor: isDarkMode ? AppColors.darkBackgroundColor : Colors.white,
+                                    contentPadding: isSmallScreen ? const EdgeInsets.symmetric(vertical: 10, horizontal: 10) : null,
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Veuillez entrer un mot de passe';
+                                    }
+
+                                    // 1. Longueur minimale
+                                    if (value.length < 8) {
+                                      return 'Le mot de passe doit contenir au moins 8 caractères';
+                                    }
+
+                                    // 2. Longueur maximale
+                                    if (value.length > 128) {
+                                      return 'Le mot de passe ne peut excéder 128 caractères';
+                                    }
+
+                                    // 3. Contient au moins une majuscule
+                                    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                                      return 'Le mot de passe doit contenir au moins une majuscule';
+                                    }
+
+                                    // 4. Contient au moins une minuscule
+                                    if (!RegExp(r'[a-z]').hasMatch(value)) {
+                                      return 'Le mot de passe doit contenir au moins une minuscule';
+                                    }
+
+                                    // 5. Contient au moins un chiffre
+                                    if (!RegExp(r'[0-9]').hasMatch(value)) {
+                                      return 'Le mot de passe doit contenir au moins un chiffre';
+                                    }
+
+                                    // 6. Contient au moins un caractère spécial
+                                    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                                      return 'Le mot de passe doit contenir au moins un caractère spécial (!@#\$%^&* etc.)';
+                                    }
+
+                                    // 7. Pas d'espaces
+                                    if (value.contains(' ')) {
+                                      return 'Le mot de passe ne peut pas contenir d\'espaces';
+                                    }
+
+                                    // 8. Pas de séquences simples (123, abc, etc.)
+                                    if (RegExp(r'(123|abc|password|azerty|qwerty)').hasMatch(value.toLowerCase())) {
+                                      return 'Évitez les séquences trop simples';
+                                    }
+
+                                    // 9. Pas de répétition excessive (aaa, 1111)
+                                    if (RegExp(r'(.)\1{3,}').hasMatch(value)) {
+                                      return 'Trop de caractères identiques consécutifs';
+                                    }
+
+                                    return null;
+                                  },
+                                ),
+                                SizedBox(height: isSmallScreen ? 5 : 12),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: () {
+                                      Navigator.pushNamed(context, '/ResetPasswordPage');
+                                    },
+                                    child: Text(
+                                      'Mot de passe oublié',
+                                      style: TextStyle(fontSize: isSmallScreen ? 12 : null, color: isDarkMode ? AppColors.darkSecondaryColor : AppColors.secondaryColor),
                                     ),
                                   ),
                                 ),
-                              ),
-                              SizedBox(height: isSmallScreen ? 15 : 25),
-                              Row(
-                                children: [
-                                  Expanded(child: Divider(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor, thickness: 1)),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                                    child: Text(
-                                      'Ou',
-                                      style: TextStyle(fontSize: isSmallScreen ? 12 : null, color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor),
+                                SizedBox(height: isSmallScreen ? 8 : 18),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: _isLoading ? null : _login,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor,
+                                      padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10 : 16),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                    child: _isLoading
+                                        ? SizedBox(
+                                      height: isSmallScreen ? 20 : 24,
+                                      width: isSmallScreen ? 20 : 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                        color: AppColors.buttonTextColor,
+                                      ),
+                                    )
+                                        : Text(
+                                      'Se connecter',
+                                      style: TextStyle(
+                                        color: AppColors.buttonTextColor,
+                                        fontSize: isSmallScreen ? 14 : 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
-                                  Expanded(child: Divider(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor, thickness: 1)),
-                                ],
-                              ),
-                              SizedBox(height: isSmallScreen ? 15 : 25),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton(
-                                  onPressed: _isGoogleLoading
-                                      ? null
-                                      : () async {
-                                    setState(() => _isGoogleLoading = true);
-                                    try {
-                                      print('Début de la connexion Google');
-                                      final userCredential = await Auth().signInWithGoogle();
-                                      if (userCredential != null && mounted) {
-                                        print('Connexion Google réussie pour ${userCredential.user?.email}');
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Connexion réussie ! Bienvenue ${userCredential.user?.displayName ?? ''}',
-                                              style: const TextStyle(color: Colors.white),
+                                ),
+                                SizedBox(height: isSmallScreen ? 15 : 25),
+                                Row(
+                                  children: [
+                                    Expanded(child: Divider(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor, thickness: 1)),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                                      child: Text(
+                                        'Ou',
+                                        style: TextStyle(fontSize: isSmallScreen ? 12 : null, color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor),
+                                      ),
+                                    ),
+                                    Expanded(child: Divider(color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor, thickness: 1)),
+                                  ],
+                                ),
+                                SizedBox(height: isSmallScreen ? 15 : 25),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton(
+                                    onPressed: _isGoogleLoading
+                                        ? null
+                                        : () async {
+                                      setState(() => _isGoogleLoading = true);
+                                      try {
+                                        print('Début de la connexion Google');
+                                        final userCredential = await Auth().signInWithGoogle();
+                                        if (userCredential != null && mounted) {
+                                          print('Connexion Google réussie pour ${userCredential.user?.email}');
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Connexion réussie ! Bienvenue ${userCredential.user?.displayName ?? ''}',
+                                                style: const TextStyle(color: Colors.white),
+                                              ),
+                                              backgroundColor: AppColors.primaryColor,
+                                              duration: const Duration(seconds: 2),
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
                                             ),
-                                            backgroundColor: AppColors.primaryColor,
-                                            duration: const Duration(seconds: 2),
-                                            behavior: SnackBarBehavior.floating,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(10),
+                                          );
+                                          // Attendre que le SnackBar soit visible avant de naviguer
+                                          await Future.delayed(const Duration(seconds: 2));
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                            print('Redirection vers RedirectionPage');
+                                            Navigator.pushReplacement(
+                                              context,
+                                              MaterialPageRoute(builder: (context) => const RedirectionPage()),
+                                            );
+                                          }
+                                        }
+                                      } on FirebaseAuthException catch (e) {
+                                        print('Erreur FirebaseAuthException: ${e.code} - ${e.message}');
+                                        if (mounted && e.code != 'cancelled') {
+                                          String errorMessage;
+                                          switch (e.code) {
+                                            case 'account-exists-with-different-credential':
+                                              errorMessage = 'Un compte existe déjà avec cet email.';
+                                              break;
+                                            case 'invalid-credential':
+                                              errorMessage = 'Session Google invalide. Veuillez réessayer.';
+                                              break;
+                                            case 'operation-not-allowed':
+                                              errorMessage = 'Connexion Google désactivée.';
+                                              break;
+                                            case 'user-disabled':
+                                              errorMessage = 'Ce compte a été désactivé.';
+                                              break;
+                                            case 'network-request-failed':
+                                              errorMessage = 'Problème de connexion internet.';
+                                              break;
+                                            default:
+                                              errorMessage = 'Erreur lors de la connexion (${e.code}).';
+                                          }
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Expanded(child: Text(errorMessage)),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.close, color: Colors.white),
+                                                    onPressed: () {
+                                                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                              backgroundColor: AppColors.errorColor,
+                                              duration: const Duration(seconds: 3),
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
                                             ),
-                                            margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
-                                          ),
-                                        );
-                                        // Attendre que le SnackBar soit visible avant de naviguer
-                                        await Future.delayed(const Duration(seconds: 2));
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                          print('Redirection vers RedirectionPage');
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(builder: (context) => const RedirectionPage()),
                                           );
                                         }
-                                      }
-                                    } on FirebaseAuthException catch (e) {
-                                      print('Erreur FirebaseAuthException: ${e.code} - ${e.message}');
-                                      if (mounted && e.code != 'cancelled') {
-                                        String errorMessage;
-                                        switch (e.code) {
-                                          case 'account-exists-with-different-credential':
-                                            errorMessage = 'Un compte existe déjà avec cet email.';
-                                            break;
-                                          case 'invalid-credential':
-                                            errorMessage = 'Session Google invalide. Veuillez réessayer.';
-                                            break;
-                                          case 'operation-not-allowed':
-                                            errorMessage = 'Connexion Google désactivée.';
-                                            break;
-                                          case 'user-disabled':
-                                            errorMessage = 'Ce compte a été désactivé.';
-                                            break;
-                                          case 'network-request-failed':
-                                            errorMessage = 'Problème de connexion internet.';
-                                            break;
-                                          default:
-                                            errorMessage = 'Erreur lors de la connexion (${e.code}).';
+                                      } catch (e) {
+                                        print('Erreur inattendue: $e');
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  const Expanded(child: Text('Erreur inattendue lors de la connexion.')),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.close, color: Colors.white),
+                                                    onPressed: () {
+                                                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                              backgroundColor: AppColors.errorColor,
+                                              duration: const Duration(seconds: 3),
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
+                                            ),
+                                          );
                                         }
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Expanded(child: Text(errorMessage)),
-                                                IconButton(
-                                                  icon: const Icon(Icons.close, color: Colors.white),
-                                                  onPressed: () {
-                                                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-                                            backgroundColor: AppColors.errorColor,
-                                            duration: const Duration(seconds: 3),
-                                            behavior: SnackBarBehavior.floating,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
-                                          ),
-                                        );
+                                      } finally {
+                                        if (mounted) {
+                                          setState(() => _isGoogleLoading = false);
+                                          print('Fin de la tentative de connexion Google');
+                                        }
                                       }
-                                    } catch (e) {
-                                      print('Erreur inattendue: $e');
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                const Expanded(child: Text('Erreur inattendue lors de la connexion.')),
-                                                IconButton(
-                                                  icon: const Icon(Icons.close, color: Colors.white),
-                                                  onPressed: () {
-                                                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-                                            backgroundColor: AppColors.errorColor,
-                                            duration: const Duration(seconds: 3),
-                                            behavior: SnackBarBehavior.floating,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            margin: EdgeInsets.only(bottom: 16, left: 16, right: 16),
-                                          ),
-                                        );
-                                      }
-                                    } finally {
-                                      if (mounted) {
-                                        setState(() => _isGoogleLoading = false);
-                                        print('Fin de la tentative de connexion Google');
-                                      }
-                                    }
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10 : 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    side: BorderSide(
-                                      color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor,
-                                    ),
-                                    backgroundColor: isDarkMode ? AppColors.darkBackgroundColor : Colors.white,
-                                  ),
-                                  child: _isGoogleLoading
-                                      ? SizedBox(
-                                    height: isSmallScreen ? 20 : 24,
-                                    width: isSmallScreen ? 20 : 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 3,
-                                      color: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor,
-                                    ),
-                                  )
-                                      : Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Image.asset(
-                                        'assets/google_icon.png',
-                                        height: isSmallScreen ? 22 : 28,
-                                        width: isSmallScreen ? 22 : 28,
+                                    },
+                                    style: OutlinedButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10 : 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
-                                      SizedBox(width: isSmallScreen ? 8 : 12),
-                                      Flexible(
-                                        child: Text(
-                                          'Se connecter avec Google',
-                                          style: TextStyle(
-                                            fontSize: isSmallScreen ? 14 : 16,
-                                            color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor,
-                                          ),
-                                        ),
+                                      side: BorderSide(
+                                        color: isDarkMode ? AppColors.darkBorderColor : AppColors.borderColor,
                                       ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: isSmallScreen ? 15 : 25),
-                              Padding(
-                                padding: EdgeInsets.only(bottom: isSmallScreen ? 10 : 20),
-                                child: TextButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(context, '/SignUpPage');
-                                  },
-                                  child: RichText(
-                                    text: TextSpan(
+                                      backgroundColor: isDarkMode ? AppColors.darkBackgroundColor : Colors.white,
+                                    ),
+                                    child: _isGoogleLoading
+                                        ? SizedBox(
+                                      height: isSmallScreen ? 20 : 24,
+                                      width: isSmallScreen ? 20 : 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                        color: isDarkMode ? AppColors.darkPrimaryColor : AppColors.primaryColor,
+                                      ),
+                                    )
+                                        : Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        TextSpan(
-                                          text: 'Pas encore de compte ? ',
-                                          style: TextStyle(
-                                            color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor,
-                                            fontSize: isSmallScreen ? 12 : 15,
-                                          ),
+                                        Image.asset(
+                                          'assets/google_icon.png',
+                                          height: isSmallScreen ? 22 : 28,
+                                          width: isSmallScreen ? 22 : 28,
                                         ),
-                                        TextSpan(
-                                          text: 'INSCRIVEZ-VOUS',
-                                          style: TextStyle(
-                                            color: isDarkMode ? AppColors.darkSecondaryColor : AppColors.secondaryColor,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: isSmallScreen ? 12 : 15,
+                                        SizedBox(width: isSmallScreen ? 8 : 12),
+                                        Flexible(
+                                          child: Text(
+                                            'Se connecter avec Google',
+                                            style: TextStyle(
+                                              fontSize: isSmallScreen ? 14 : 16,
+                                              color: isDarkMode ? AppColors.darkTextColor : AppColors.textColor,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                                SizedBox(height: isSmallScreen ? 15 : 25),
+                                Padding(
+                                  padding: EdgeInsets.only(bottom: isSmallScreen ? 10 : 20),
+                                  child: TextButton(
+                                    onPressed: () {
+                                      Navigator.pushNamed(context, '/SignUpPage');
+                                    },
+                                    child: RichText(
+                                      text: TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: 'Pas encore de compte ? ',
+                                            style: TextStyle(
+                                              color: isDarkMode ? AppColors.darkSecondaryTextColor : AppColors.secondaryTextColor,
+                                              fontSize: isSmallScreen ? 12 : 15,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text: 'INSCRIVEZ-VOUS',
+                                            style: TextStyle(
+                                              color: isDarkMode ? AppColors.darkSecondaryColor : AppColors.secondaryColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: isSmallScreen ? 12 : 15,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

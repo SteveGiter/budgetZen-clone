@@ -4,10 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../colors/app_colors.dart';
 import '../services/firebase/firestore.dart';
+import '../widgets/CombinedFinanceChart.dart';
 import '../widgets/EpargnesChart.dart';
 import '../widgets/ForHomePage/AddExpenseDialog.dart';
 import '../widgets/ForHomePage/AddIncomeDialog.dart';
 import '../widgets/ForHomePage/AddSavingsDialog.dart';
+import '../widgets/ForHomePage/BudgetValidator.dart';
 import '../widgets/RevenusChart.dart';
 import '../widgets/CircularChart.dart';
 import '../widgets/custom_app_bar.dart';
@@ -58,49 +60,11 @@ class _HomePageState extends State<HomePage> {
   bool isExpanded = false;
   int selectedMonth = DateTime.now().month;
 
-  // Propriétés temporaires pour le getter montantAAjouter
-  double _tempAmount = 0.0;
-  double _tempCurrentMontantActuel = 0.0;
-  double _tempMontantCible = 0.0;
-
   StreamSubscription<DocumentSnapshot>? _userSubscription;
   StreamSubscription<double>? _depensesSubscription;
   StreamSubscription<double>? _revenusSubscription;
   StreamSubscription<double>? _epargnesSubscription;
   final FirestoreService _firestoreService = FirestoreService();
-
-  final List<Map<String, String>> revenuCategories = [
-    {'value': 'Salaire', 'label': '💰 Salaire'},
-    {'value': 'Investissement', 'label': '📈 Investissement'},
-    {'value': 'Cadeau', 'label': '🎁 Cadeau'},
-    {'value': 'Vente', 'label': '🛒 Vente'},
-    {'value': 'Autre', 'label': '❓ Autre'},
-  ];
-
-  final List<Map<String, String>> depenseCategories = [
-    {'value': 'Nourriture', 'label': '🍔 Nourriture'},
-    {'value': 'Transport', 'label': '🚗 Transport'},
-    {'value': 'Logement', 'label': '🏠 Logement'},
-    {'value': 'Loisirs', 'label': '🎭 Loisirs'},
-    {'value': 'Santé', 'label': '🏥 Santé'},
-    {'value': 'Éducation', 'label': '📚 Éducation'},
-    {'value': 'Autre', 'label': '❓ Autre'},
-  ];
-
-  final List<Map<String, String>> epargneCategories = [
-    {'value': 'Prévisionnel', 'label': '📅 Prévisionnel'},
-    {'value': 'Projet', 'label': '🎯 Projet'},
-    {'value': 'Urgence', 'label': '🚨 Urgence'},
-    {'value': 'Retraite', 'label': '👴 Retraite'},
-    {'value': 'Investissement', 'label': '📈 Investissement'},
-    {'value': 'Autre', 'label': '❓ Autre'},
-  ];
-
-  // Getter pour montantAAjouter
-  double get montantAAjouter {
-    final montantRestant = _tempMontantCible - _tempCurrentMontantActuel;
-    return _tempAmount > montantRestant ? montantRestant : _tempAmount;
-  }
 
   @override
   void initState() {
@@ -450,7 +414,13 @@ class _HomePageState extends State<HomePage> {
         onIncomeAdded: (amount, category, description) async {
           await _addIncome(amount, category, description);
         },
-        revenuCategories: revenuCategories,
+        revenuCategories: [
+          {'value': 'Salaire', 'label': '💰 Salaire'},
+          {'value': 'Investissement', 'label': '📈 Investissement'},
+          {'value': 'Cadeau', 'label': '🎁 Cadeau'},
+          {'value': 'Vente', 'label': '🛒 Vente'},
+          {'value': 'Autre', 'label': '❓ Autre'},
+        ],
       ),
     );
   }
@@ -462,7 +432,15 @@ class _HomePageState extends State<HomePage> {
         onExpenseAdded: (amount, category, description) async {
           await _addExpense(amount, category, description);
         },
-        depenseCategories: depenseCategories,
+        depenseCategories: [
+          {'value': 'Nourriture', 'label': '🍔 Nourriture'},
+          {'value': 'Transport', 'label': '🚗 Transport'},
+          {'value': 'Logement', 'label': '🏠 Logement'},
+          {'value': 'Loisirs', 'label': '🎭 Loisirs'},
+          {'value': 'Santé', 'label': '🏥 Santé'},
+          {'value': 'Éducation', 'label': '📚 Éducation'},
+          {'value': 'Autre', 'label': '❓ Autre'},
+        ],
       ),
     );
   }
@@ -492,7 +470,6 @@ class _HomePageState extends State<HomePage> {
           final dateLimite = data['dateLimite'] as Timestamp?;
           final isExpired = dateLimite != null && dateLimite.toDate().isBefore(DateTime.now());
 
-          // Un objectif est inutilisable s'il est atteint ou expiré
           return isCompleted || montantActuel >= montantCible || isExpired;
         });
       }
@@ -505,8 +482,19 @@ class _HomePageState extends State<HomePage> {
       await showDialog(
         context: context,
         builder: (context) => AddSavingsDialog(
-          onSavingsAdded: (amount, category, description, goalId) async {
-            await _addSavings(amount, category, description, goalId);
+          onSavingsAdded: (amount, category, description, goalId, savingsGoals) async {
+            // Utiliser la liste savingsGoals passée par AddSavingsDialog
+            final isBudgetValid = await BudgetValidator.validateBudget(
+              context,
+              _firestoreService,
+              user.uid,
+              amount,
+              goalId,
+              savingsGoals, // Passer la liste reçue du dialog
+            );
+            if (isBudgetValid) {
+              await _addSavings(amount, category, description, goalId);
+            }
           },
           userId: user.uid,
           firestoreService: _firestoreService,
@@ -549,8 +537,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _addIncome(double amount, String category,
-      String description) async {
+  Future<void> _addIncome(double amount, String category, String description) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -575,8 +562,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                    'Revenu de ${amount.toStringAsFixed(2)} FCFA ajouté'),
+                child: Text('Revenu de ${amount.toStringAsFixed(2)} FCFA ajouté'),
               ),
               IconButton(
                 icon: Icon(Icons.close, color: Colors.white),
@@ -597,8 +583,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                    'Erreur lors de l\'ajout du revenu: ${e.toString()}'),
+                child: Text('Erreur lors de l\'ajout du revenu: ${e.toString()}'),
               ),
               IconButton(
                 icon: Icon(Icons.close, color: Colors.white),
@@ -614,9 +599,7 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
-
-  Future<void> _addExpense(double amount, String category,
-      String description) async {
+  Future<void> _addExpense(double amount, String category, String description) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -625,8 +608,7 @@ class _HomePageState extends State<HomePage> {
           .collection('budgets')
           .doc(user.uid)
           .get();
-      final currentBudget = (budgetDoc.data()?['budgetActuel'] as num?)
-          ?.toDouble() ?? 0.0;
+      final currentBudget = (budgetDoc.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
 
       if ((currentBudget - amount) < 0) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -634,8 +616,7 @@ class _HomePageState extends State<HomePage> {
             content: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                    child: Text('Opération impossible: budget insuffisant')),
+                Expanded(child: Text('Opération impossible: budget insuffisant')),
                 IconButton(
                   icon: Icon(Icons.close, color: Colors.white),
                   onPressed: () {
@@ -669,10 +650,7 @@ class _HomePageState extends State<HomePage> {
           content: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                    'Dépense de ${amount.toStringAsFixed(2)} FCFA ajoutée'),
-              ),
+              Expanded(child: Text('Dépense de ${amount.toStringAsFixed(2)} FCFA ajoutée')),
               IconButton(
                 icon: Icon(Icons.close, color: Colors.white),
                 onPressed: () {
@@ -691,10 +669,7 @@ class _HomePageState extends State<HomePage> {
           content: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                    'Erreur lors de l\'ajout de la dépense: ${e.toString()}'),
-              ),
+              Expanded(child: Text('Erreur lors de l\'ajout de la dépense: ${e.toString()}')),
               IconButton(
                 icon: Icon(Icons.close, color: Colors.white),
                 onPressed: () {
@@ -714,9 +689,19 @@ class _HomePageState extends State<HomePage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Utilisateur non connecté.'),
+        SnackBar(
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Expanded(child: Text('Vous devez être connecté pour ajouter une épargne.')),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+              ),
+            ],
+          ),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
       return;
@@ -737,49 +722,39 @@ class _HomePageState extends State<HomePage> {
           throw Exception('Objectif d\'épargne introuvable.');
         }
 
-        final currentBudget = (budgetSnap.data()?['budgetActuel'] as num?)?.toDouble() ?? 0.0;
-        final currentMontantActuel = (objectifSnap.data()?['montantActuel'] as num?)?.toDouble() ?? 0.0;
-        final montantCible = (objectifSnap.data()?['montantCible'] as num?)?.toDouble() ?? 0.0;
-        final isCompleted = (objectifSnap.data()?['isCompleted'] as bool?) ?? false;
+        final budgetData = budgetSnap.data();
+        final objectifData = objectifSnap.data();
+
+        if (budgetData == null || objectifData == null) {
+          throw Exception('Données invalides ou corrompues.');
+        }
+
+        final currentBudget = (budgetData['budgetActuel'] as num?)?.toDouble() ?? 0.0;
+        final currentMontantActuel = (objectifData['montantActuel'] as num?)?.toDouble() ?? 0.0;
+        final montantCible = (objectifData['montantCible'] as num?)?.toDouble() ?? 0.0;
+        final isCompleted = (objectifData['isCompleted'] as bool?) ?? false;
+        final dateLimite = objectifData['dateLimite'] as Timestamp?;
+
+        // Vérification si l'objectif est expiré
+        if (dateLimite != null && dateLimite.toDate().isBefore(DateTime.now())) {
+          throw Exception('Objectif expiré.');
+        }
 
         // Vérification si l'objectif est déjà atteint
         if (isCompleted || currentMontantActuel >= montantCible) {
-          throw Exception('Cet objectif est déjà atteint. Aucune épargne supplémentaire ne peut être ajoutée.');
+          throw Exception('Cet objectif est déjà atteint.');
         }
-
-        // Mettre à jour les valeurs temporaires pour le getter
-        _tempAmount = amount;
-        _tempCurrentMontantActuel = currentMontantActuel;
-        _tempMontantCible = montantCible;
-
-        // Utiliser le getter montantAAjouter
-        final montantAAjouterValue = montantAAjouter;
 
         // Vérification du budget disponible
-        if (currentBudget < montantAAjouterValue) {
-          throw Exception('Budget insuffisant pour cette épargne.');
-        }
-
-        // Vérification des épargnes récentes pour éviter les doublons
-        final recentEpargnes = await _firestoreService.firestore
-            .collection('epargnes')
-            .where('userId', isEqualTo: user.uid)
-            .where('objectifId', isEqualTo: goalId)
-            .where('montant', isEqualTo: montantAAjouter)
-            .where('categorie', isEqualTo: category)
-            .where('dateCreation',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime.now().subtract(const Duration(seconds: 5))))
-            .get();
-
-        if (recentEpargnes.docs.isNotEmpty) {
-          throw Exception('Une épargne similaire a été ajoutée récemment. Veuillez attendre quelques secondes.');
+        if (currentBudget < amount) {
+          throw Exception('Budget insuffisant.');
         }
 
         // Ajout de l'épargne
         final epargneRef = _firestoreService.firestore.collection('epargnes').doc();
         transaction.set(epargneRef, {
           'userId': user.uid,
-          'montant': montantAAjouter,
+          'montant': amount,
           'categorie': category,
           'description': description,
           'objectifId': goalId,
@@ -788,11 +763,11 @@ class _HomePageState extends State<HomePage> {
 
         // Mise à jour du budget
         transaction.update(budgetRef, {
-          'budgetActuel': FieldValue.increment(-montantAAjouter),
+          'budgetActuel': FieldValue.increment(-amount),
         });
 
         // Mise à jour de l'objectif
-        final newMontantActuel = currentMontantActuel + montantAAjouter;
+        final newMontantActuel = currentMontantActuel + amount;
         transaction.update(objectifRef, {
           'montantActuel': newMontantActuel,
           'isCompleted': newMontantActuel >= montantCible,
@@ -800,19 +775,12 @@ class _HomePageState extends State<HomePage> {
         });
       });
 
-      // Afficher un message indiquant le montant réellement ajouté et la différence
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  _tempAmount != montantAAjouter
-                      ? 'Épargne de ${montantAAjouter.toStringAsFixed(2)} FCFA ajoutée (${(_tempAmount - montantAAjouter).toStringAsFixed(2)} FCFA excédentaires)'
-                      : 'Épargne de ${montantAAjouter.toStringAsFixed(2)} FCFA ajoutée',
-                ),
-              ),
+              Expanded(child: Text('Épargne de ${amount.toStringAsFixed(2)} FCFA ajoutée avec succès')),
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
@@ -823,18 +791,13 @@ class _HomePageState extends State<HomePage> {
           duration: const Duration(seconds: 3),
         ),
       );
-
-      // Réinitialiser les valeurs temporaires après utilisation
-      _tempAmount = 0.0;
-      _tempCurrentMontantActuel = 0.0;
-      _tempMontantCible = 0.0;
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text('Erreur lors de l\'ajout de l\'épargne: ${e.toString()}')),
+              Expanded(child: Text('Erreur: ${e.toString()}')),
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
@@ -842,7 +805,7 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 4),
         ),
       );
     }
