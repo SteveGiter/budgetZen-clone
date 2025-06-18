@@ -1,10 +1,10 @@
+
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../colors/app_colors.dart';
 import '../services/firebase/firestore.dart';
-import '../widgets/CombinedFinanceChart.dart';
 import '../widgets/EpargnesChart.dart';
 import '../widgets/ForHomePage/AddExpenseDialog.dart';
 import '../widgets/ForHomePage/AddIncomeDialog.dart';
@@ -483,14 +483,13 @@ class _HomePageState extends State<HomePage> {
         context: context,
         builder: (context) => AddSavingsDialog(
           onSavingsAdded: (amount, category, description, goalId, savingsGoals) async {
-            // Utiliser la liste savingsGoals passée par AddSavingsDialog
             final isBudgetValid = await BudgetValidator.validateBudget(
               context,
               _firestoreService,
               user.uid,
               amount,
               goalId,
-              savingsGoals, // Passer la liste reçue du dialog
+              savingsGoals,
             );
             if (isBudgetValid) {
               await _addSavings(amount, category, description, goalId);
@@ -537,6 +536,51 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _showMoneyManagementPlanDialog(BuildContext context, double income) async {
+    final needs = income * 0.50; // 50% pour les besoins
+    final wants = income * 0.30; // 30% pour les désirs
+    final savings = income * 0.20; // 20% pour l'épargne/dettes
+
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Plan de gestion de votre nouveau revenu'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Nous vous proposons d\'allouer votre revenu selon la règle 50/30/20 :',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 10),
+            Text('• 50% pour les besoins (nourriture, logement, etc.) : ${needs.toStringAsFixed(2)} FCFA'),
+            Text('• 30% pour les désirs (loisirs, shopping, etc.) : ${wants.toStringAsFixed(2)} FCFA'),
+            Text('• 20% pour l\'épargne ou remboursement de dettes : ${savings.toStringAsFixed(2)} FCFA'),
+            const SizedBox(height: 10),
+            const Text(
+              'Vous pouvez ajuster ces montants dans vos objectifs financiers ou suivre ce plan pour une gestion équilibrée.',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fermer'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/SavingsGoalsPage');
+            },
+            child: const Text('Définir des objectifs'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _addIncome(double amount, String category, String description) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -576,6 +620,9 @@ class _HomePageState extends State<HomePage> {
           duration: const Duration(seconds: 3),
         ),
       );
+
+      // Afficher le plan de gestion après l'ajout du revenu
+      await _showMoneyManagementPlanDialog(context, amount);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -599,6 +646,7 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
+
   Future<void> _addExpense(double amount, String category, String description) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -735,22 +783,18 @@ class _HomePageState extends State<HomePage> {
         final isCompleted = (objectifData['isCompleted'] as bool?) ?? false;
         final dateLimite = objectifData['dateLimite'] as Timestamp?;
 
-        // Vérification si l'objectif est expiré
         if (dateLimite != null && dateLimite.toDate().isBefore(DateTime.now())) {
           throw Exception('Objectif expiré.');
         }
 
-        // Vérification si l'objectif est déjà atteint
         if (isCompleted || currentMontantActuel >= montantCible) {
           throw Exception('Cet objectif est déjà atteint.');
         }
 
-        // Vérification du budget disponible
         if (currentBudget < amount) {
           throw Exception('Budget insuffisant.');
         }
 
-        // Ajout de l'épargne
         final epargneRef = _firestoreService.firestore.collection('epargnes').doc();
         transaction.set(epargneRef, {
           'userId': user.uid,
@@ -761,12 +805,10 @@ class _HomePageState extends State<HomePage> {
           'dateCreation': FieldValue.serverTimestamp(),
         });
 
-        // Mise à jour du budget
         transaction.update(budgetRef, {
           'budgetActuel': FieldValue.increment(-amount),
         });
 
-        // Mise à jour de l'objectif
         final newMontantActuel = currentMontantActuel + amount;
         transaction.update(objectifRef, {
           'montantActuel': newMontantActuel,
