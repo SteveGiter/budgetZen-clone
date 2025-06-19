@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -621,6 +620,8 @@ class _HomePageState extends State<HomePage> {
         ),
       );
 
+      // Close the income dialog before showing the money management plan dialog
+      Navigator.pop(context);
       // Afficher le plan de gestion après l'ajout du revenu
       await _showMoneyManagementPlanDialog(context, amount);
     } catch (e) {
@@ -630,7 +631,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text('Erreur lors de l\'ajout du revenu: ${e.toString()}'),
+                child: Text('Erreur lors de l\'ajout du revenu : ${e.toString()}'),
               ),
               IconButton(
                 icon: Icon(Icons.close, color: Colors.white),
@@ -813,7 +814,6 @@ class _HomePageState extends State<HomePage> {
         transaction.update(objectifRef, {
           'montantActuel': newMontantActuel,
           'isCompleted': newMontantActuel >= montantCible,
-          'derniereMiseAJour': FieldValue.serverTimestamp(),
         });
       });
 
@@ -876,7 +876,7 @@ class _MonthDropdown extends StatelessWidget {
       ),
       child: DropdownButton<int>(
         value: selectedMonth,
-        underline: const SizedBox(),
+        underline: const SizedBox(), // Suppression de la ligne par défaut
         icon: Icon(Icons.arrow_drop_down, color: colors.onSurface),
         style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurface),
         dropdownColor: colors.surfaceVariant,
